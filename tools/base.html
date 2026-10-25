@@ -1,0 +1,930 @@
+<title>Мясо Кубани и стейки</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Мясная лавка: мраморная говядина, вагю, стейки и костромские сыры. Режем при вас, доставляем по Москве в холоде.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F0C0B'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23C9A46C' stroke-width='2'/%3E%3Ctext x='32' y='40' font-family='Georgia,serif' font-size='22' fill='%23C9A46C' text-anchor='middle'%3EМК%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&family=Onest:wght@400;500;600&display=swap">
+<style>
+/* Layout: кинематографичный лонгрид. Живая мраморность (WebGL) → светлая «бумага» → тёмная витрина → бычья кровь → бумага → снова мрамор. Асимметричная сетка 12 колонок, огромная антиква, моно-подписи как маркировка на туше. */
+:root{
+  color-scheme: dark;
+  --ink:#0E0B0A; --ink-2:#161110; --ink-3:#211917;
+  --line:rgba(242,233,219,.13); --line-2:rgba(242,233,219,.22);
+  --tallow:#F2E9DB; --tallow-2:#C9BCAA; --tallow-3:#8F8172;
+  --brass:#C9A46C; --brass-2:#E7CD9F;
+  --blood:#5E1015; --blood-2:#8E2329; --blood-3:#B23A3F;
+  --bone:#ECE3D4; --bone-2:#E1D6C4; --bone-ink:#1C1412; --bone-ink-2:#6C5B51; --bone-line:rgba(28,20,18,.16);
+  --f-display:'Cormorant','Cormorant Garamond',Georgia,'Times New Roman',serif;
+  --f-body:'Onest',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  --gut:clamp(16px,4.2vw,64px);
+  --ease:cubic-bezier(.2,.7,.1,1);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{margin:0;background:var(--ink);color:var(--tallow);font:400 16px/1.6 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:70;background:var(--ink)}
+img{max-width:100%;display:block}
+[hidden]{display:none!important}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+::selection{background:var(--blood-3);color:#fff}
+.wrap{max-width:1440px;margin-inline:auto;padding-left:max(var(--gut),env(safe-area-inset-left,0px));padding-right:max(var(--gut),env(safe-area-inset-right,0px))}
+.mono{font-family:var(--f-mono);font-weight:500;font-size:11px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance}
+p{margin:0}
+em{font-style:italic}
+.grain{position:fixed;inset:-50%;z-index:65;pointer-events:none;opacity:.075;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}100%{transform:translate(0,0)}}
+
+/* Buttons */
+.btn{position:relative;display:inline-flex;align-items:center;gap:14px;height:58px;padding:0 28px;border-radius:999px;font:500 15px/1 var(--f-body);text-decoration:none;overflow:hidden;isolation:isolate;transition:color .5s var(--ease)}
+.btn::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;transform:translateY(101%);transition:transform .55s var(--ease)}
+.btn:hover::before{transform:none}
+.btn .ar{display:inline-block;transition:transform .5s var(--ease)}
+.btn:hover .ar{transform:translateX(5px)}
+.btn-fill{background:var(--tallow);color:var(--ink)}
+.btn-fill::before{background:var(--brass)}
+.btn-line{box-shadow:inset 0 0 0 1px var(--line-2);color:var(--tallow)}
+.btn-line::before{background:var(--tallow)}
+.btn-line:hover{color:var(--ink)}
+.btn-ink{background:var(--bone-ink);color:var(--bone)}
+.btn-ink::before{background:var(--blood-2)}
+
+/* Header */
+.hdr{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:60;transition:background .5s,backdrop-filter .5s,border-color .5s;border-bottom:1px solid transparent}
+.hdr.solid{background:rgba(14,11,10,.72);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);border-color:var(--line)}
+.hdr .wrap{display:flex;align-items:center;gap:32px;height:76px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;flex-shrink:0}
+.logo-mark{width:38px;height:38px;border:1px solid var(--brass);border-radius:50%;display:grid;place-items:center;font:600 15px/1 var(--f-display);color:var(--brass)}
+.logo-txt{font:500 20px/1 var(--f-display)}
+.logo-txt em{color:var(--brass-2)}
+.nav{display:flex;gap:28px;margin-left:auto}
+.nav a{position:relative;font-size:13.5px;color:var(--tallow-2);text-decoration:none;transition:color .3s}
+.nav a::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:1px;background:var(--brass);transform:scaleX(0);transform-origin:right;transition:transform .45s var(--ease)}
+.nav a:hover{color:var(--tallow)}
+.nav a:hover::after{transform:scaleX(1);transform-origin:left}
+.cart-btn{display:inline-flex;align-items:center;gap:10px;height:42px;padding:0 6px 0 18px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line-2);font-size:13.5px;font-weight:500;transition:box-shadow .3s}
+.cart-btn:hover{box-shadow:inset 0 0 0 1px var(--brass)}
+.cart-count{min-width:30px;height:30px;padding:0 8px;border-radius:15px;background:var(--blood-3);color:#fff;font:600 12px/30px var(--f-body);text-align:center;transition:transform .4s var(--ease)}
+.cart-count.pop{transform:scale(1.25)}
+.burger{display:none;width:42px;height:42px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--line-2);align-items:center;justify-content:center}
+@media (max-width:1080px){.nav{display:none}.cart-btn{margin-left:auto}.burger{display:inline-flex}}
+@media (max-width:520px){.hdr .wrap{gap:10px;height:64px}.logo-txt{font-size:17px}.logo-mark{width:32px;height:32px;font-size:13px}.cart-btn .lbl{display:none}.cart-btn{padding:0 6px}}
+.hdr.menu{background:#0E0B0A;backdrop-filter:none;-webkit-backdrop-filter:none;border-color:var(--line)}
+.mnav{position:fixed;inset:0;z-index:59;background:#0E0B0A;overflow:auto;padding-top:calc(64px + env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px);animation:mnIn .35s var(--ease)}
+@keyframes mnIn{from{transform:translateY(-12px)}to{transform:none}}
+.mnav .wrap{display:flex;flex-direction:column;min-height:100%;padding-block:12px 28px}
+.mnav nav{display:grid}
+.mnav nav a{display:flex;justify-content:space-between;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--line);text-decoration:none;font:400 32px/1.05 var(--f-display);color:var(--tallow)}
+.mnav nav a span{font:500 10.5px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--tallow-3)}
+.mnav-foot{margin-top:auto;padding-top:32px;display:grid;gap:14px}
+.mnav-foot .ph{font:300 30px/1 var(--f-display);text-decoration:none;color:var(--brass-2)}
+.mnav-foot p{color:var(--tallow-3);font-size:13.5px;line-height:1.5}
+.mnav-foot .btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ============ 1. HERO ============ */
+.hero{position:relative;min-height:clamp(680px,100vh,1000px);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;isolation:isolate;background:var(--ink)}
+.hero-ph{position:absolute;top:0;right:0;bottom:0;width:60%;margin:0;z-index:-1}
+.hero-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 35%;animation:heroIn 1.8s var(--ease) both}
+@keyframes heroIn{from{transform:scale(1.04)}to{transform:none}}
+.hero-ph::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--ink) 0%,rgba(14,11,10,.72) 12%,rgba(14,11,10,0) 40%),linear-gradient(0deg,var(--ink) 0%,rgba(14,11,10,.6) 20%,rgba(14,11,10,0) 42%),linear-gradient(180deg,rgba(14,11,10,.65) 0%,rgba(14,11,10,0) 18%)}
+.ph-tag{position:absolute;right:max(var(--gut),env(safe-area-inset-right,0px));top:calc(100px + env(safe-area-inset-top,0px));display:flex;gap:12px;align-items:center;padding:10px 16px;border-radius:999px;background:rgba(14,11,10,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--tallow-2)}
+.ph-tag b{font-weight:500;color:var(--brass-2)}
+.hero-in{position:relative;padding-top:160px;padding-bottom:clamp(36px,5vw,64px)}
+.hero-eyebrow{display:flex;gap:14px;align-items:center;color:var(--brass-2);margin-bottom:clamp(10px,1.6vw,24px)}
+.hero-eyebrow::before{content:"";width:44px;height:1px;background:currentColor}
+.hero-h{display:grid;line-height:.82;letter-spacing:-.045em;max-width:min(56%,820px)}
+.hero-h .l{display:block;overflow:hidden;padding-bottom:.06em}
+.hero-h .l > span{display:block;animation:lineUp 1.3s var(--ease) both}
+.hero-h .l:nth-child(2) > span{animation-delay:.12s}
+.hero-h .l1{font-size:clamp(4.6rem,12.5vw,13rem);font-weight:300;margin-left:-.04em}
+.hero-h .l2{font-size:clamp(1.9rem,3.7vw,3.7rem);font-weight:300;letter-spacing:-.02em;line-height:1.02;margin-top:.12em}
+.hero-h .l2 em{color:var(--brass-2)}
+@keyframes lineUp{from{transform:translateY(105%)}to{transform:none}}
+.hero-foot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,48px);align-items:end;margin-top:clamp(28px,4vw,56px);padding-top:clamp(20px,2vw,28px);border-top:1px solid var(--line-2)}
+.hero-lead{font-size:clamp(1rem,1.25vw,1.15rem);color:var(--tallow-2);max-width:44ch}
+.hero-cta{display:flex;flex-wrap:wrap;gap:10px}
+.specimen{position:absolute;right:max(var(--gut),env(safe-area-inset-right,0px));bottom:clamp(190px,24vh,260px);width:clamp(140px,11.5vw,200px);aspect-ratio:3/4;margin:0;transform:translate3d(var(--mx,0),var(--my,0),0) rotate(-4deg);box-shadow:0 40px 80px -20px rgba(0,0,0,.8),0 0 0 6px var(--ink);border-radius:2px;overflow:hidden;transition:transform .9s var(--ease)}
+.specimen img{width:100%;height:100%;object-fit:cover}
+.specimen figcaption{position:absolute;left:8px;bottom:8px;right:8px;padding:8px 10px;background:rgba(14,11,10,.8);border-radius:2px;font-size:10px}
+@media (max-width:900px){
+  .hero{min-height:0;justify-content:flex-start}
+  .hero-ph{position:relative;width:100%;aspect-ratio:1/1.08;z-index:0}
+  .hero-ph::after{background:linear-gradient(0deg,var(--ink) 0%,rgba(14,11,10,.7) 26%,rgba(14,11,10,0) 55%),linear-gradient(180deg,rgba(14,11,10,.7) 0%,rgba(14,11,10,0) 22%)}
+  .hero-in{margin-top:-34vw;padding-top:0;z-index:1}
+  .hero-h{max-width:none}
+  .hero-foot{grid-template-columns:1fr}
+  .specimen{display:none}
+  .ph-tag{top:calc(76px + env(safe-area-inset-top,0px));padding:8px 12px;font-size:9.5px}
+}
+.cuts-head h2,.offer-head h2,.proc-head h2,.ps h2,.chs-head h2,.inst-tx h2{padding-bottom:.14em}
+/* reveal: elements are visible at rest; motion only where scroll-driven animation is supported */
+@supports (animation-timeline: view()){
+  @media (prefers-reduced-motion:no-preference){
+    .rv-img img{animation:rvImg linear both;animation-timeline:view();animation-range:entry 0% cover 50%}
+  }
+}
+@keyframes rv{from{transform:translateY(60px)}to{transform:none}}
+@keyframes rvImg{from{transform:scale(1.18)}to{transform:scale(1)}}
+
+/* ============ 2. PROBLEM / SOLUTION ============ */
+.ps{position:relative;background:var(--bone);color:var(--bone-ink);padding-block:clamp(90px,12vw,190px) clamp(80px,10vw,160px)}
+.ps .wrap{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 clamp(16px,2vw,32px)}
+.ps-k{grid-column:1/-1;color:var(--blood-2);margin-bottom:clamp(24px,3vw,44px);display:flex;gap:14px;align-items:center}
+.ps-k::before{content:"";width:44px;height:1px;background:currentColor}
+.ps h2{grid-column:1/span 10;font-size:clamp(2.8rem,7.4vw,8.4rem);line-height:.88;letter-spacing:-.035em;font-weight:300}
+.ps h2 em{color:var(--blood-2)}
+.ps h2 .dim{color:var(--bone-ink-2);opacity:.55}
+.ps-fig{grid-column:1/span 4;margin:clamp(48px,6vw,96px) 0 0;position:relative}
+.ps-fig .frame{aspect-ratio:3/4;overflow:hidden;border-radius:2px;box-shadow:0 50px 90px -40px rgba(28,20,18,.55)}
+.ps-fig img{width:100%;height:100%;object-fit:cover}
+.ps-fig figcaption{margin-top:14px;color:var(--bone-ink-2)}
+.ledger{grid-column:6/span 7;margin-top:clamp(48px,6vw,96px);align-self:start}
+.ledger-h{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr) minmax(0,1.25fr);gap:20px;padding-bottom:14px;border-bottom:1px solid var(--bone-ink);color:var(--bone-ink-2)}
+.lrow{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr) minmax(0,1.25fr);gap:20px;padding:22px 0;border-bottom:1px solid var(--bone-line);align-items:baseline;transition:background .4s}
+.lrow .k{font:500 italic 1.45rem/1.1 var(--f-display)}
+.lrow .was{font-size:14px;color:var(--bone-ink-2);text-decoration:line-through;text-decoration-color:rgba(142,35,41,.55);text-decoration-thickness:1px}
+.lrow .now{font-size:15.5px;line-height:1.5;color:var(--bone-ink)}
+.lrow .now b{font-weight:600}
+.lrow:hover .was{text-decoration-color:var(--blood-3)}
+.ps-sum{margin-top:30px;display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center}
+.ps-sum p{font:400 italic 1.5rem/1.3 var(--f-display);max-width:30ch}
+@media (max-width:960px){
+  .ps h2{grid-column:1/-1}
+  .ps-fig{grid-column:1/span 7}
+  .ledger{grid-column:1/-1}
+}
+@media (max-width:620px){
+  .ps-fig{grid-column:1/-1}
+  .ledger-h{display:none}
+  .lrow{grid-template-columns:1fr;gap:6px}
+}
+
+/* ============ 3a. CUT INDEX ============ */
+.cuts{padding-block:clamp(100px,13vw,200px) clamp(80px,9vw,140px);position:relative}
+.cuts-head{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px clamp(16px,2vw,32px);align-items:end;margin-bottom:clamp(48px,6vw,90px)}
+.cuts-head .mono{grid-column:1/span 3;color:var(--brass);align-self:start;padding-top:1.2em}
+.cuts-head h2{grid-column:4/span 9;font-size:clamp(3rem,8.6vw,9.6rem);line-height:.84;letter-spacing:-.04em;font-weight:300}
+.cuts-head h2 em{color:var(--brass-2)}
+.cuts-head p{margin-top:28px;grid-column:8/span 5;color:var(--tallow-2);max-width:44ch}
+@media (max-width:900px){.cuts-head .mono,.cuts-head h2,.cuts-head p{grid-column:1/-1}}
+.index{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-2)}
+.cut{border-bottom:1px solid var(--line)}
+.cut-row{width:100%;display:grid;grid-template-columns:clamp(170px,17vw,250px) minmax(0,1fr) auto 52px;gap:clamp(20px,3vw,48px);align-items:center;padding:20px 0;text-align:left}
+.cut-ph{display:block;aspect-ratio:4/3;overflow:hidden;border-radius:2px;background:var(--ink-3)}
+.cut-ph img{width:100%;height:100%;object-fit:cover}
+.cut-main{display:grid;gap:8px;min-width:0}
+.cut-bms{color:var(--brass)}
+.cut-name{font:300 clamp(2rem,3.8vw,3.9rem)/.95 var(--f-display);letter-spacing:-.025em;transition:color .3s}
+.cut-row:hover .cut-name{color:var(--brass-2)}
+.cut-sub{font-size:14px;color:var(--tallow-2);line-height:1.45}
+.cut-price{text-align:right;font:500 14px/1.3 var(--f-mono);color:var(--tallow);white-space:nowrap}
+.cut-price small{display:block;color:var(--tallow-3);font-size:11px;margin-top:4px}
+.cut-plus{width:48px;height:48px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--line-2);display:grid;place-items:center;justify-self:end;transition:background .3s,box-shadow .3s}
+.cut-plus svg{transition:transform .4s var(--ease)}
+.cut-row:hover .cut-plus{box-shadow:inset 0 0 0 1px var(--brass)}
+.cut.open .cut-plus{background:var(--tallow);color:var(--ink)}
+.cut.open .cut-plus svg{transform:rotate(45deg)}
+.cut-more{display:grid;grid-template-columns:clamp(170px,17vw,250px) minmax(0,1fr);gap:clamp(20px,3vw,48px);padding:0 0 28px}
+.cut-more .tx{grid-column:2;display:grid;gap:20px;align-content:start;max-width:640px}
+.cut-more .tx p{color:var(--tallow-2)}
+@media (max-width:700px){
+  .cut-row{grid-template-columns:92px minmax(0,1fr) 40px;grid-template-areas:"ph main plus" "ph price plus";gap:6px 14px;padding:14px 0}
+  .cut-ph{grid-area:ph;aspect-ratio:1/1}
+  .cut-main{grid-area:main;gap:4px}
+  .cut-name{font-size:1.65rem;line-height:1}
+  .cut-sub{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cut-bms{font-size:9.5px}
+  .cut-price{grid-area:price;text-align:left;font-size:12.5px}
+  .cut-price small{display:none}
+  .cut-plus{grid-area:plus;width:40px;height:40px}
+  .cut-more{grid-template-columns:1fr;padding-bottom:20px}
+  .cut-more .tx{grid-column:1}
+}
+.bms-meter{display:grid;gap:8px}
+.bms-meter .ticks{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+.bms-meter .ticks i{height:18px;border-radius:1px;background:rgba(242,233,219,.07)}
+.bms-meter .ticks i.on{background:linear-gradient(180deg,var(--brass-2),var(--brass))}
+.bms-meter .ax{display:flex;justify-content:space-between;color:var(--tallow-3);font-size:10px}
+.buy{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.stepper{display:inline-flex;align-items:center;height:52px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line-2)}
+.stepper button{width:44px;height:100%;font-size:18px;color:var(--tallow-2)}
+.stepper button:hover{color:var(--tallow)}
+.stepper output{min-width:64px;text-align:center;font:500 13px/1 var(--f-mono)}
+.line-total{font:400 1.8rem/1 var(--f-display)}
+@media (max-width:900px){
+  .cut-row{grid-template-columns:minmax(0,1fr) auto 48px;gap:6px 14px}
+  .cut-bms{grid-column:1/-1;grid-row:1}
+  .cut-name{grid-column:1;grid-row:2}
+  .cut-sub{display:none}
+  .cut-price{grid-column:2;grid-row:2}
+  .cut-plus{grid-column:3;grid-row:2;width:44px;height:44px}
+  .cut-more{grid-template-columns:1fr}
+  .cut-more .ph,.cut-more .tx{grid-column:1}
+}
+@media (max-width:520px){.cut-price small{display:none}}
+/* ============ 3b. DONENESS INSTRUMENT ============ */
+.inst{position:relative;padding-block:clamp(90px,11vw,170px);background:radial-gradient(70% 90% at 15% 50%,rgba(142,35,41,.18),transparent 70%),var(--ink-2);border-block:1px solid var(--line);overflow:hidden}
+.inst .wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(40px,6vw,110px);align-items:center}
+.steak-wrap{position:relative;aspect-ratio:1/1;max-width:640px;width:100%;display:grid;place-items:center}
+.steak-wrap::before{content:"";position:absolute;inset:6%;border-radius:50%;border:1px dashed var(--line-2)}
+.steak-wrap .deg{position:absolute;font-size:10px;color:var(--tallow-3)}
+.steak-g{position:relative;width:78%;transform:rotate(-8deg)}
+.cap{position:absolute;right:-6%;top:9%;bottom:9%;width:46%;border-radius:50%;background:radial-gradient(120% 90% at 0% 50%,#b48e66 0,#e6d4ba 55%,#f1e5d3 75%,#d9c3a2 100%);box-shadow:0 40px 80px -30px rgba(0,0,0,.8)}
+.steak{--c:#B03A40;--core:62%;position:relative;width:92%;aspect-ratio:1.28/1;border-radius:46% 54% 48% 52% / 56% 48% 52% 44%;background:radial-gradient(closest-side,var(--c) 0,var(--c) var(--core),color-mix(in srgb,var(--c) 45%,#8a6a5c) calc(var(--core) + 12%),#6d4637 86%,#3b2116 94%,#22120c 100%);box-shadow:0 60px 100px -30px rgba(0,0,0,.8),inset 0 0 0 2px rgba(0,0,0,.25);transition:background .25s linear}
+.steak::after{content:"";position:absolute;inset:8%;border-radius:inherit;opacity:.5;mix-blend-mode:screen;background:
+ radial-gradient(3px 2px at 20% 30%,#f3e6d6 60%,transparent 70%),radial-gradient(4px 2px at 42% 22%,#f3e6d6 60%,transparent 70%),radial-gradient(2px 3px at 63% 40%,#f3e6d6 60%,transparent 70%),radial-gradient(5px 2px at 35% 58%,#f3e6d6 60%,transparent 70%),radial-gradient(3px 2px at 70% 66%,#f3e6d6 60%,transparent 70%),radial-gradient(2px 2px at 52% 74%,#f3e6d6 60%,transparent 70%),radial-gradient(4px 3px at 26% 72%,#f3e6d6 60%,transparent 70%),radial-gradient(3px 2px at 78% 28%,#f3e6d6 60%,transparent 70%),radial-gradient(2px 2px at 56% 54%,#f3e6d6 60%,transparent 70%),radial-gradient(6px 2px at 46% 40%,#f3e6d6 50%,transparent 70%)}
+.probe{position:absolute;left:50%;top:50%;width:46%;height:3px;background:linear-gradient(90deg,#d9d4cc,#8f8a83);transform-origin:0 50%;transform:rotate(-28deg);border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.probe::after{content:"";position:absolute;right:-14px;top:-7px;width:18px;height:17px;border-radius:3px;background:var(--ink-3);box-shadow:inset 0 0 0 1px var(--line-2)}
+.inst-tx{display:grid;gap:26px;min-width:0}
+.inst-tx .mono{color:var(--brass)}
+.inst-tx h2{font-size:clamp(2.6rem,5.4vw,5.4rem);line-height:.9;letter-spacing:-.03em;font-weight:300}
+.inst-tx h2 em{color:var(--brass-2)}
+.readout{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;padding-top:.3em;margin-bottom:14px}
+.readout .t{font:300 clamp(5.5rem,11vw,10.5rem)/.78 var(--f-display);letter-spacing:-.05em}
+.readout .t sup{font-size:.36em;vertical-align:.6em;margin-left:.04em}
+.readout .nm{display:grid;gap:6px;padding-bottom:6px}
+.readout .nm b{font:400 italic 2rem/1 var(--f-display);color:var(--brass-2)}
+.readout .nm span{color:var(--tallow-2);font-size:14.5px}
+.range{appearance:none;-webkit-appearance:none;width:100%;height:44px;background:transparent;margin:0;cursor:grab}
+.range::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#5E0F17,#7E1A22 20%,#B03A40 40%,#B8665C 60%,#8E6A60 80%,#6A5550)}
+.range::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#5E0F17,#7E1A22 20%,#B03A40 40%,#B8665C 60%,#8E6A60 80%,#6A5550)}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;margin-top:-12px;border-radius:50%;background:var(--tallow);box-shadow:0 0 0 6px rgba(242,233,219,.12),0 8px 20px rgba(0,0,0,.5)}
+.range::-moz-range-thumb{width:30px;height:30px;border:0;border-radius:50%;background:var(--tallow);box-shadow:0 0 0 6px rgba(242,233,219,.12),0 8px 20px rgba(0,0,0,.5)}
+.range-ax{display:flex;justify-content:space-between;color:var(--tallow-3);font-size:10px;margin-top:-4px}
+.advice{padding:18px 20px;border-left:1px solid var(--brass);color:var(--tallow-2);font-size:15px;max-width:52ch;min-height:5.6em}
+.advice b{color:var(--tallow);font-weight:500}
+@media (max-width:900px){.inst .wrap{grid-template-columns:1fr}.steak-wrap{max-width:440px;margin-inline:auto}}
+
+/* ============ 3c. CHEESE RAIL ============ */
+.chs{position:relative;padding-block:clamp(90px,11vw,170px) clamp(60px,7vw,110px);overflow:hidden;background:radial-gradient(60% 60% at 80% 40%,rgba(201,164,108,.12),transparent 70%),var(--ink)}
+.chs-ghost{position:absolute;left:-2vw;top:clamp(40px,6vw,90px);font:300 clamp(6rem,22vw,22rem)/.8 var(--f-display);letter-spacing:-.05em;color:transparent;-webkit-text-stroke:1px rgba(242,233,219,.09);white-space:nowrap;pointer-events:none;user-select:none}
+.chs-head{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px clamp(16px,2vw,32px);align-items:end;position:relative}
+.chs-copy{grid-column:6/span 7;display:grid;gap:22px}
+.chs-head .mono{color:var(--brass)}
+.chs-head h2{font-size:clamp(2.6rem,6vw,6.4rem);line-height:.88;letter-spacing:-.035em;font-weight:300}
+.chs-head h2 em{color:var(--brass-2)}
+.chs-head p{color:var(--tallow-2);max-width:48ch}
+.rail-ctl{grid-column:1/span 4;display:flex;gap:10px;align-self:end}
+.rail-ctl button{width:58px;height:58px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--line-2);display:grid;place-items:center;transition:background .3s,color .3s}
+.rail-ctl button:hover{background:var(--tallow);color:var(--ink)}
+@media (max-width:900px){.chs-copy{grid-column:1/-1}.rail-ctl{grid-column:1/-1;grid-row:2}}
+.rail{display:flex;gap:clamp(18px,2.4vw,40px);overflow-x:auto;scroll-snap-type:x mandatory;padding:clamp(40px,5vw,72px) max(var(--gut),env(safe-area-inset-right,0px)) 30px max(var(--gut),env(safe-area-inset-left,0px));scrollbar-width:none;position:relative;scroll-padding-inline:max(var(--gut),env(safe-area-inset-left,0px))}
+.rail::-webkit-scrollbar{display:none}
+.wheel{flex:0 0 clamp(250px,26vw,380px);scroll-snap-align:start;display:grid;gap:18px;min-width:0}
+.wheel:nth-child(even){margin-top:clamp(30px,5vw,80px)}
+.wheel .pic{position:relative;aspect-ratio:1/1;display:grid;place-items:center}
+.wheel .pic::before{content:"";position:absolute;inset:12% 8% 4%;border-radius:50%;background:radial-gradient(closest-side,rgba(201,164,108,.22),transparent);filter:blur(8px);transition:transform .8s var(--ease)}
+.wheel .pic img{position:relative;width:92%;filter:drop-shadow(0 30px 30px rgba(0,0,0,.55));transition:transform .9s var(--ease)}
+.wheel:hover .pic img{transform:rotate(-5deg) scale(1.04)}
+.wheel:hover .pic::before{transform:scale(1.15)}
+.wheel h3{font-size:clamp(1.9rem,2.6vw,2.6rem);line-height:1;font-weight:400}
+.wheel .meta{display:flex;gap:16px;color:var(--tallow-3)}
+.wheel .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:16px;border-top:1px solid var(--line)}
+.wheel .pr{font:500 14px/1.3 var(--f-mono)}
+.wheel .pr small{display:block;color:var(--tallow-3);font-size:10.5px}
+.add-ico{height:46px;padding:0 18px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line-2);font-size:13.5px;font-weight:500;transition:background .3s,color .3s,box-shadow .3s}
+.add-ico:hover,.add-ico.done{background:var(--tallow);color:var(--ink)}
+.chs-foot{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-between;align-items:center;color:var(--tallow-3);font-size:13.5px;border-top:1px solid var(--line);padding-top:24px;margin-top:20px}
+.chs-foot a{color:var(--tallow-2)}
+
+/* ============ 4. PROOF ============ */
+.proof{position:relative;overflow:hidden;color:#fff;background:radial-gradient(70% 100% at 85% 0%,rgba(142,35,41,.55) 0%,transparent 62%),radial-gradient(60% 80% at 0% 100%,rgba(201,164,108,.08) 0%,transparent 70%),#2A0C0E;padding-block:clamp(100px,13vw,200px) clamp(70px,8vw,120px)}
+.proof .wrap{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 clamp(16px,2vw,32px)}
+.proof .mono{grid-column:1/-1;color:rgba(255,236,220,.7);display:flex;gap:14px;align-items:center;margin-bottom:clamp(28px,3vw,48px)}
+.proof .mono::before{content:"";width:44px;height:1px;background:currentColor}
+.quote{grid-column:1/span 11;margin:0;font:300 clamp(3.4rem,11vw,13rem)/.82 var(--f-display);letter-spacing:-.045em}
+.quote .q{color:rgba(255,220,205,.42)}
+.quote em{color:var(--brass-2)}
+.cite{grid-column:7/span 6;margin-top:clamp(24px,3vw,40px);display:grid;gap:22px;font-size:15.5px;color:rgba(255,236,220,.82)}
+.cite .src{font-size:11px;color:rgba(255,236,220,.6)}
+.cite ul{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.cite li{padding:16px 0;border-top:1px solid rgba(255,236,220,.18);display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px}
+.cite li::before{content:"—";color:rgba(255,220,205,.55)}
+.facts{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:clamp(70px,9vw,140px);border-top:1px solid rgba(255,236,220,.22)}
+.fact{padding:26px 24px 0 0;display:grid;gap:12px;align-content:start;min-width:0}
+.fact+.fact{padding-left:24px;border-left:1px solid rgba(255,236,220,.14)}
+.fact:nth-child(2){margin-top:clamp(20px,4vw,60px)}
+.fact:nth-child(3){margin-top:clamp(10px,2vw,30px)}
+.fact:nth-child(4){margin-top:clamp(30px,6vw,90px)}
+.fact b{font:300 clamp(4rem,8vw,8rem)/.8 var(--f-display);letter-spacing:-.04em}
+.fact span{font-size:14px;color:rgba(255,236,220,.78);max-width:24ch}
+@media (max-width:900px){.quote,.cite{grid-column:1/-1}.facts{grid-template-columns:1fr 1fr}.fact:nth-child(3){padding-left:0;border-left:0}.fact:nth-child(n){margin-top:0}.fact{padding-bottom:24px}}
+
+/* ============ 5. PROCESS ============ */
+.proc{padding-block:clamp(100px,12vw,190px);background:var(--ink)}
+.proc-head{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px clamp(16px,2vw,32px);margin-bottom:clamp(48px,6vw,90px);align-items:end}
+.proc-head h2{grid-column:1/span 8;font-size:clamp(2.8rem,7vw,7.6rem);line-height:.86;letter-spacing:-.04em;font-weight:300}
+.proc-head h2 em{color:var(--brass-2)}
+.proc-head p{grid-column:9/span 4;color:var(--tallow-2)}
+@media (max-width:900px){.proc-head h2,.proc-head p{grid-column:1/-1}}
+.stage{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(24px,4vw,72px);align-items:stretch}
+.steps{display:grid;align-content:start;border-top:1px solid var(--line-2)}
+.stp{position:relative;display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;padding:24px 0;border-bottom:1px solid var(--line);text-align:left;transition:color .3s}
+.stp .tm{font:500 13px/1.6 var(--f-mono);color:var(--tallow-3)}
+.stp .ti{font:400 clamp(1.6rem,2.2vw,2.2rem)/1.05 var(--f-display);color:var(--tallow-3);transition:color .4s,transform .6s var(--ease)}
+.stp .pg{position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:var(--brass-2);transform:scaleX(0);transform-origin:left}
+.stp[aria-selected="true"] .ti{color:var(--tallow);transform:translateX(10px)}
+.stp[aria-selected="true"] .tm{color:var(--brass-2)}
+.stp:hover .ti{color:var(--tallow)}
+.panel{position:relative;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);background:var(--ink-2);border-radius:3px;overflow:hidden;min-height:520px;box-shadow:0 0 0 1px var(--line)}
+.panel .ph{position:relative;overflow:hidden}
+.panel .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.08);transition:opacity .9s var(--ease),transform 1.6s var(--ease)}
+.panel .ph img.on{opacity:1;transform:none}
+.panel .tx{display:grid;align-content:space-between;gap:30px;padding:clamp(28px,3vw,48px)}
+.panel .big{font:300 clamp(6rem,10vw,10rem)/.75 var(--f-display);color:var(--brass);letter-spacing:-.05em}
+.panel h3{font-size:clamp(2rem,3vw,3rem);line-height:1;font-weight:400;margin-bottom:16px}
+.panel p{color:var(--tallow-2);font-size:15.5px}
+.panel .note{color:var(--tallow-3);font-size:10.5px}
+@media (max-width:1000px){.stage{grid-template-columns:1fr}.panel{grid-template-columns:1fr;min-height:0}.panel .ph{aspect-ratio:16/10}}
+
+/* ============ 6. OFFER ============ */
+.offer{background:var(--bone);color:var(--bone-ink);padding-block:clamp(100px,12vw,180px) clamp(100px,12vw,180px)}
+.offer-head{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px clamp(16px,2vw,32px);align-items:end;margin-bottom:clamp(50px,6vw,100px)}
+.offer-head .mono{grid-column:1/span 4;color:var(--blood-2);align-self:start;padding-top:1em}
+.offer-head h2{grid-column:5/span 8;font-size:clamp(3rem,8vw,8.6rem);line-height:.84;letter-spacing:-.04em;font-weight:300}
+.offer-head h2 em{color:var(--blood-2)}
+.offer-head p{margin-top:28px;grid-column:5/span 5;color:var(--bone-ink-2)}
+@media (max-width:900px){.offer-head .mono,.offer-head h2,.offer-head p{grid-column:1/-1}}
+.menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+.set{display:grid;gap:26px;padding:clamp(28px,3vw,48px);min-width:0}
+.set+.set{border-left:1px solid var(--bone-line)}
+.set.hero-set{background:var(--bone-ink);color:var(--bone);border:0;margin-top:-40px;padding-block:clamp(48px,5vw,80px);box-shadow:0 60px 120px -40px rgba(28,20,18,.6);position:relative;z-index:1}
+.set.hero-set + .set{border-left:0}
+.set .for{color:var(--bone-ink-2)}
+.set.hero-set .for{color:var(--brass)}
+.set h3{font:300 italic clamp(2.4rem,3.6vw,3.6rem)/.95 var(--f-display);letter-spacing:-.02em}
+.set ul{list-style:none;margin:0;padding:0;display:grid}
+.set li{display:flex;align-items:baseline;gap:10px;padding:11px 0;border-bottom:1px dashed var(--bone-line);font-size:14.5px}
+.set.hero-set li{border-color:rgba(236,227,212,.16)}
+.set li .d{flex:1;border-bottom:1px dotted currentColor;opacity:.25;transform:translateY(-4px);min-width:12px}
+.set li .w{font:500 12px/1 var(--f-mono);opacity:.75;white-space:nowrap}
+.price{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.price b{font:400 clamp(2.6rem,3.6vw,3.6rem)/1 var(--f-display);letter-spacing:-.02em}
+.price s{font:500 13px/1 var(--f-mono);opacity:.55}
+.set .btn{justify-self:start}
+.set.hero-set .btn-ink{background:var(--bone);color:var(--bone-ink)}
+.set.hero-set .btn-ink::before{background:var(--brass)}
+.offer-note{margin-top:clamp(36px,4vw,56px);display:flex;flex-wrap:wrap;gap:12px 36px;color:var(--bone-ink-2);font-size:13.5px}
+@media (max-width:980px){.menu{grid-template-columns:1fr}.set+.set{border-left:0;border-top:1px solid var(--bone-line)}.set.hero-set{margin-top:0}}
+
+/* ============ 7. CTA ============ */
+.cta{position:relative;min-height:clamp(620px,92vh,940px);display:flex;flex-direction:column;justify-content:center;overflow:hidden;isolation:isolate;background:#200809}
+.cta-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.42}
+.addrs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px}
+.addr{display:grid;gap:6px;align-content:start;padding:22px 24px;background:rgba(14,11,10,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px var(--line);border-radius:3px}
+.addr .mono{color:var(--brass)}
+.addr b{font:400 1.8rem/1.1 var(--f-display)}
+.addr span{color:var(--tallow-2);font-size:14px}
+.addr a{justify-self:start;margin-top:8px;color:var(--brass-2);font-size:13.5px;text-decoration:none;border-bottom:1px solid currentColor}
+.cta-shade{position:absolute;inset:0;z-index:-1;background:radial-gradient(80% 70% at 50% 50%,rgba(14,11,10,.25),rgba(14,11,10,.92) 85%)}
+.cta .wrap{display:grid;gap:clamp(30px,4vw,60px);padding-block:clamp(90px,10vw,150px)}
+.cta h2{font-size:clamp(3.6rem,12.5vw,14rem);line-height:.8;letter-spacing:-.05em;font-weight:300}
+.cta h2 .r{display:block;text-align:right}
+.cta h2 em{color:var(--brass-2)}
+.cta-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:30px 60px;align-items:end;border-top:1px solid var(--line-2);padding-top:30px}
+.phone{font:300 clamp(2.4rem,5vw,4.8rem)/1 var(--f-display);text-decoration:none;letter-spacing:-.02em;transition:color .3s}
+.phone:hover{color:var(--brass-2)}
+.cta-meta{display:flex;flex-wrap:wrap;gap:10px 30px;color:var(--tallow-2);font-size:14px;margin-top:14px}
+.cta-btns{display:flex;flex-wrap:wrap;gap:10px}
+@media (max-width:860px){.cta-row{grid-template-columns:1fr}.cta h2 .r{text-align:left}}
+
+.ftr{padding-block:34px;border-top:1px solid var(--line)}
+.ftr .wrap{display:flex;flex-wrap:wrap;gap:18px 40px;justify-content:space-between;align-items:center;color:var(--tallow-3);font-size:13px}
+.ftr nav{display:flex;flex-wrap:wrap;gap:22px}
+.ftr nav a{text-decoration:none;color:var(--tallow-2)}
+
+/* ============ Cart drawer ============ */
+.scrim{position:fixed;inset:0;z-index:80;background:rgba(8,6,5,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.drawer{position:fixed;z-index:90;top:0;right:0;bottom:0;width:min(500px,100%);background:var(--ink);box-shadow:-1px 0 0 var(--line);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px);animation:slide .5s var(--ease)}
+@keyframes slide{from{transform:translateX(60px)}to{transform:none}}
+.dr-h{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid var(--line)}
+.dr-h h3{font-size:2.2rem;font-weight:300}
+.x{width:44px;height:44px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--line-2);font-size:20px}
+.dr-b{flex:1;overflow:auto;padding:6px 26px 26px}
+.ci{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.ci img{width:60px;height:60px;object-fit:cover;border-radius:2px;background:var(--ink-3)}
+.ci img.cz{object-fit:contain}
+.ci b{font:500 1.2rem/1.1 var(--f-display);display:block}
+.ci small{font:400 11.5px/1.4 var(--f-mono);color:var(--tallow-3)}
+.ci .r{display:grid;justify-items:end;gap:6px}
+.ci .stepper{height:34px}
+.ci .stepper button{width:30px}
+.ci .stepper output{min-width:50px;font-size:11.5px}
+.empty{padding:56px 0;display:grid;gap:18px;justify-items:start}
+.empty b{font:300 2.2rem/1.05 var(--f-display)}
+.empty span{color:var(--tallow-3)}
+.sum{display:grid;gap:8px;padding:18px 0}
+.sum div{display:flex;justify-content:space-between;font-size:14px;color:var(--tallow-2)}
+.sum .tot{font:400 1.9rem/1 var(--f-display);color:var(--tallow);padding-top:10px}
+.note{font-size:12.5px;color:var(--tallow-3);line-height:1.5}
+form.order{display:grid;gap:14px;margin-top:6px}
+.seg{display:grid;grid-template-columns:1fr 1fr;border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px var(--line-2)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{height:42px;display:grid;place-items:center;border-radius:999px;font-size:14px;cursor:pointer;color:var(--tallow-2)}
+.seg input:checked+label{background:var(--tallow);color:var(--ink);font-weight:600}
+.seg input:focus-visible+label{outline:2px solid var(--brass)}
+.fld{display:grid;gap:7px}
+.fld label{font:500 10.5px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--tallow-3)}
+.fld input,.fld select,.fld textarea{width:100%;height:48px;padding:0 16px;border:0;border-radius:3px;box-shadow:inset 0 0 0 1px var(--line);background:var(--ink-2);color:var(--tallow);font:400 15px/1.3 var(--f-body)}
+.fld textarea{height:80px;padding:12px 16px;resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;box-shadow:inset 0 0 0 1px var(--brass)}
+.err{font-size:13px;color:#E8858A}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ok-box{display:grid;gap:16px;padding:44px 0;justify-items:start}
+.ok-box b{font:300 2.6rem/1 var(--f-display)}
+.ok-box p{color:var(--tallow-2)}
+.toast{position:fixed;z-index:75;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:14px 20px;background:var(--tallow);color:var(--ink);border-radius:999px;font-weight:500;font-size:14px;box-shadow:0 20px 50px rgba(0,0,0,.45);max-width:calc(100% - 32px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ============ Compact phone layout ============ */
+@media (max-width:620px){
+  body{font-size:15px}
+  .btn{height:50px;padding:0 22px;font-size:14px}
+  .hero-in{padding-bottom:28px}
+  .hero-h .l1{font-size:22vw}
+  .hero-h .l2{font-size:1.7rem}
+  .hero-foot{margin-top:22px;gap:18px;padding-top:18px}
+  .hero-lead{font-size:14.5px}
+  .ps,.cuts,.inst,.chs,.proof,.proc,.offer{padding-block:64px}
+  .ps h2{font-size:2.5rem}
+  .ps-k,.proof .mono{margin-bottom:20px}
+  .ps-fig{margin-top:32px}
+  .ps-fig .frame{aspect-ratio:4/3}
+  .ledger{margin-top:32px}
+  .lrow{padding:14px 0}
+  .lrow .k{font-size:1.2rem}
+  .ps-sum p{font-size:1.25rem}
+  .cuts-head{margin-bottom:24px;gap:12px}
+  .cuts-head h2,.offer-head h2,.proc-head h2,.chs-head h2{font-size:2.6rem}
+  .cuts-head p,.offer-head p{margin-top:0}
+  .inst .wrap{gap:24px}
+  .steak-wrap{max-width:260px}
+  .steak-wrap .deg{display:none}
+  .inst-tx{gap:16px}
+  .inst-tx h2{font-size:2.3rem}
+  .readout .t{font-size:4.6rem}
+  .readout .nm b{font-size:1.6rem}
+  .advice{min-height:0;padding:12px 14px;font-size:14px}
+  .chs-ghost,.rail-ctl{display:none}
+  .chs-head p{font-size:14.5px}
+  .rail{padding-top:24px;gap:16px}
+  .wheel{flex-basis:64vw;gap:12px}
+  .wheel:nth-child(even){margin-top:0}
+  .wheel h3{font-size:1.6rem}
+  .chs-foot{font-size:12.5px}
+  .quote{font-size:3rem}
+  .cite{margin-top:20px;font-size:14.5px}
+  .facts{margin-top:40px}
+  .fact{padding:18px 12px 18px 0;gap:8px}
+  .fact+.fact{padding-left:12px}
+  .fact b{font-size:3.2rem}
+  .fact span{font-size:12.5px}
+  .proc-head{margin-bottom:28px}
+  .stp{grid-template-columns:56px minmax(0,1fr);padding:14px 0}
+  .stp .ti{font-size:1.35rem}
+  .panel .tx{padding:20px;gap:14px}
+  .panel .big{font-size:3.6rem}
+  .panel h3{font-size:1.6rem;margin-bottom:8px}
+  .panel p{font-size:14.5px}
+  .offer-head{margin-bottom:28px}
+  .set{padding:24px 0;gap:16px}
+  .set.hero-set{padding:28px 20px;margin-inline:calc(-1 * max(var(--gut),env(safe-area-inset-left,0px)));border-radius:0}
+  .set h3{font-size:2.1rem}
+  .set li{padding:8px 0;font-size:13.5px}
+  .price b{font-size:2.3rem}
+  .offer-note{margin-top:24px;font-size:10px;gap:8px 20px}
+  .cta{min-height:0}
+  .cta .wrap{padding-block:72px;gap:28px}
+  .cta h2{font-size:3.3rem}
+  .phone{font-size:2.3rem}
+  .cta-row{padding-top:22px;gap:22px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+<!--/HEAD-->
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="hdr" id="hdr">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Мясо Кубани и стейки, наверх"><span class="logo-mark">МК</span><span class="logo-txt">Мясо Кубани <em>&amp; стейки</em></span></a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="#cuts">Отруба</a><a href="#doneness">Прожарка</a><a href="#cheese">Сыры</a><a href="#process">Как заказать</a><a href="#offer">Наборы</a><a href="#contact">Адреса</a>
+    </nav>
+    <button class="acc-btn" id="accBtn" aria-label="Личный кабинет"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="5" r="3.2" stroke="currentColor" stroke-width="1.3"/><path d="M2 15c.8-3 3.2-4.6 6-4.6s5.2 1.6 6 4.6" stroke="currentColor" stroke-width="1.3"/></svg><span class="lbl">Войти</span><span class="bb num" hidden></span></button>
+    <button class="cart-btn" id="cartOpen" aria-label="Открыть корзину"><span class="lbl">Корзина</span><span class="cart-count num" id="cartCount">0</span></button>
+    <button class="burger" id="burger" aria-expanded="false" aria-controls="mnav" aria-label="Меню"><svg width="18" height="10" viewBox="0 0 18 10" fill="none"><path d="M0 1h18M0 9h18" stroke="currentColor" stroke-width="1.4"/></svg></button>
+  </div>
+</header>
+<div class="mnav" id="mnav" hidden>
+  <div class="wrap">
+    <nav aria-label="Меню">
+      <a href="#cuts">Отруба <span>8 позиций</span></a>
+      <a href="#doneness">Прожарка <span>°C</span></a>
+      <a href="#cheese">Сыры <span>Боговарово</span></a>
+      <a href="#process">Как заказать</a>
+      <a href="#offer">Наборы <span>от 4 900 ₽</span></a>
+      <a href="#contact">Адреса</a>
+    </nav>
+    <div class="mnav-foot">
+      <a class="ph num" href="tel:+79262443737">+7 926 244-37-37</a>
+      <p>Таллинская, 7 · Московская ярмарка, 1 этаж<br>Вт–Вс, 10:00–20:00</p>
+      <div class="btns"><a class="btn btn-fill" href="https://wa.me/79262443737" target="_blank" rel="noopener">WhatsApp</a><button class="btn btn-line" id="mnCart">Корзина</button><button class="btn btn-line" id="mnAcc">Личный кабинет</button></div>
+    </div>
+  </div>
+</div>
+
+<main id="top">
+
+<!-- 1. HERO -->
+<section class="hero" aria-label="Главный экран">
+  <figure class="hero-ph"><img src="img/hero-ribeye-2x.jpg" srcset="img/hero-ribeye.jpg 1050w, img/hero-ribeye-2x.jpg 2100w" sizes="(max-width:900px) 100vw, 60vw" alt="Толстые стейки рибай с плотной мраморностью" fetchpriority="high" decoding="async"></figure>
+  <span class="ph-tag mono"><span>Рибай-стейк</span><b class="num">BMS 5–6</b><span>4 см</span></span>
+  <figure class="specimen" id="specimen">
+    <img src="img/hero-a5.jpg" alt="Срез японского вагю категории A5">
+    <figcaption class="mono">Вагю A5 · BMS 11</figcaption>
+  </figure>
+  <div class="wrap hero-in">
+    <p class="hero-eyebrow mono">Мясная лавка · стейки и вагю</p>
+    <h1 class="hero-h">
+      <span class="l l1"><span>Мрамор,</span></span>
+      <span class="l l2"><span>который <em>тает</em> от тепла ладони</span></span>
+    </h1>
+    <div class="hero-foot">
+      <p class="hero-lead">Мраморная говядина, вагю и фермерское мясо с Кубани. Режем стейк нужной толщины при вас и привозим по Москве в холоде.</p>
+      <div class="hero-cta">
+        <a class="btn btn-fill" href="#cuts">Выбрать отруб <span class="ar">→</span></a>
+        <a class="btn btn-line" href="#catalog">Весь каталог</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. PROBLEM / SOLUTION -->
+<section class="ps" aria-labelledby="psH">
+  <div class="wrap">
+    <p class="ps-k mono">Почему лавка, а не полка</p>
+    <h2 id="psH">Мясо в лотке <span class="dim">молчит.</span> Мы рассказываем <em>о каждом отрубе.</em></h2>
+    <figure class="ps-fig">
+      <div class="frame rv-img"><img src="img/striploin-wagyu.jpg" alt="Мясник режет стриплойн вагю на стейки" loading="lazy"></div>
+      <figcaption class="mono">Стриплойн вагю · режем под ваш гриль</figcaption>
+    </figure>
+    <div class="ledger">
+      <div class="ledger-h mono"><span>&nbsp;</span><span>На полке</span><span>В лавке</span></div>
+      <div class="lrow"><span class="k">Откуда</span><span class="was">Страна на этикетке, порода не указана</span><span class="now"><b>Знаем откорм и мраморность</b> каждого отруба по шкале BMS</span></div>
+      <div class="lrow"><span class="k">Нарезка</span><span class="was">Нарезано заранее, толщина как получилось</span><span class="now"><b>Режем при вас:</b> 3–4 см под гриль или 3 мм под сукияки</span></div>
+      <div class="lrow"><span class="k">Свежесть</span><span class="was">Подложка, впитавшая сок</span><span class="now"><b>Охлаждённое мясо</b> без воды в упаковке</span></div>
+      <div class="lrow"><span class="k">Доставка</span><span class="was">Пакет в общем багажнике</span><span class="now"><b>Вакуум и термосумка</b> с хладоэлементами</span></div>
+      <div class="lrow"><span class="k">Совет</span><span class="was">Ценник и полка</span><span class="now"><b>Мясник подскажет</b> отруб, толщину и прожарку</span></div>
+      <div class="ps-sum">
+        <p>И даст попробовать костромской сыр, пока режет ваш рибай.</p>
+        <a class="btn btn-ink" href="#cuts">К отрубам <span class="ar">→</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3a. CUT INDEX -->
+<section class="cuts" id="cuts" aria-labelledby="cutsH">
+  <div class="wrap">
+    <div class="cuts-head">
+      <p class="mono">Витрина · говядина</p>
+      <h2 id="cutsH">Восемь отрубов, <em>один мясник</em></h2>
+      <p>Нажмите на отруб, чтобы выбрать вес. Мясо продаётся на вес: точную сумму мясник назовёт после нарезки.</p>
+    </div>
+    <ul class="index" id="index"></ul>
+  </div>
+</section>
+
+<!-- 3b. DONENESS -->
+<section class="inst" id="doneness" aria-labelledby="instH">
+  <div class="wrap">
+    <div class="steak-wrap" aria-hidden="true">
+      <span class="deg mono" style="top:2%">Термощуп</span>
+      <span class="deg mono" style="bottom:2%">Центр стейка</span>
+      <div class="steak-g"><div class="cap"></div><div class="steak" id="steak"></div></div>
+      <div class="probe"></div>
+    </div>
+    <div class="inst-tx">
+      <p class="mono">Инструмент · прожарка</p>
+      <h2 id="instH">Жарьте по <em>термометру,</em> а не на глаз</h2>
+      <div class="readout" aria-live="polite">
+        <span class="t num" id="tVal">55<sup>°</sup></span>
+        <span class="nm"><b id="tName">Medium rare</b><span id="tRu">Розовый и сочный центр</span></span>
+      </div>
+      <div>
+        <label class="mono" for="tRange" style="display:block;color:var(--tallow-3);margin-bottom:4px">Температура в центре, °C</label>
+        <input class="range" type="range" id="tRange" min="46" max="72" step="1" value="55">
+        <div class="range-ax mono num"><span>46°</span><span>52°</span><span>58°</span><span>64°</span><span>72°</span></div>
+      </div>
+      <p class="advice" id="tAdvice"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 3c. CHEESE -->
+<section class="chs" id="cheese" aria-labelledby="chsH">
+  <div class="chs-ghost" aria-hidden="true">Боговарово</div>
+  <div class="wrap chs-head">
+    <div class="rail-ctl"><button id="railPrev" aria-label="Предыдущие сыры">←</button><button id="railNext" aria-label="Следующие сыры">→</button></div>
+    <div class="chs-copy">
+      <p class="mono">Сыры и масло · Костромские сыроварни</p>
+      <h2 id="chsH">Сыр, который <em>просит стейк</em></h2>
+      <p>Выдержанные сыры «Боговарово» из Вохмы и Мантурово. В лавке их режут от головы и дают попробовать до покупки.</p>
+    </div>
+  </div>
+  <div class="rail" id="rail"></div>
+  <div class="wrap"><div class="chs-foot"><span>Режем по весу от 250 г · храним при 0…+6 °C</span><a href="https://bogovarovo.ru/produkciya" target="_blank" rel="noopener">Вся линейка производителя ↗</a></div></div>
+</section>
+
+<!-- 4. PROOF -->
+<section class="proof" aria-labelledby="proofH">
+  <div class="wrap">
+    <p class="mono" id="proofH">Покупатели · Яндекс Карты</p>
+    <blockquote class="quote"><span class="q">«</span>Очень <em>вкусное</em> мясо<span class="q">»</span></blockquote>
+    <div class="cite">
+      <span class="src mono">Отзыв покупателя, май 2024</span>
+      <ul>
+        <li><span>Хвалят выбор говядины: от мраморных отрубов до костей.</span></li>
+        <li><span>Отмечают костромские сыры дешевле, чем в других магазинах, и бесплатную дегустацию, включая сыр с трюфелем.</span></li>
+      </ul>
+    </div>
+    <div class="facts">
+      <div class="fact"><b class="num">12</b><span>баллов шкалы BMS. Вагю A5 на прилавке стоит на 10–12</span></div>
+      <div class="fact"><b class="num">8</b><span>отрубов говядины в витрине, от вагю до мозговых костей</span></div>
+      <div class="fact"><b class="num">7</b><span>сыров и масло костромской сыроварни «Боговарово»</span></div>
+      <div class="fact"><b class="num">5</b><span>способов оплаты: наличные, карта, перевод, СБП и QR-код</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. PROCESS -->
+<section class="proc" id="process" aria-labelledby="procH">
+  <div class="wrap">
+    <div class="proc-head">
+      <h2 id="procH">От прилавка <em>до двери</em> за один день</h2>
+      <p>Так выглядит обычный заказ, оформленный утром. Нажмите на шаг, чтобы посмотреть, что происходит с вашим мясом.</p>
+    </div>
+    <div class="stage">
+      <div class="steps" role="tablist" aria-label="Этапы заказа" id="steps"></div>
+      <div class="panel" role="tabpanel" id="panel" aria-live="polite">
+        <div class="ph" id="panelPh"></div>
+        <div class="tx">
+          <span class="big num" id="pBig">01</span>
+          <div><h3 id="pTitle"></h3><p id="pText"></p></div>
+          <span class="note mono">Время указано для примера заказа на сегодня</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. CTA -->
+<section class="cta" id="contact" aria-labelledby="ctaH">
+  <img class="cta-bg" src="img/striploin-2x.jpg" alt="" loading="lazy">
+  <div class="cta-shade"></div>
+  <div class="wrap">
+    <p class="mono" style="color:var(--brass)">Адреса и заказ</p>
+    <h2 id="ctaH">Ужин начинается <span class="r"><em>у прилавка</em></span></h2>
+    <div class="addrs">
+      <article class="addr">
+        <span class="mono">Магазин</span>
+        <b>Таллинская ул., 7</b>
+        <span>ТЦ «Московская ярмарка», 1 этаж</span>
+        <span>Вт–Вс, 10:00–20:00 · парковка у входа</span>
+        <a href="https://yandex.ru/maps/org/myaso_kubani_i_steyki/72276710971/" target="_blank" rel="noopener">Маршрут в Яндекс Картах ↗</a>
+      </article>
+    </div>
+    <div class="cta-row">
+      <div>
+        <a class="phone num" href="tel:+79262443737">+7 926 244-37-37</a>
+        <div class="cta-meta"><span>Заказ и вопросы по телефону и в WhatsApp</span></div>
+      </div>
+      <div class="cta-btns">
+        <button class="btn btn-fill" id="ctaCart">Собрать заказ <span class="ar">→</span></button>
+        <a class="btn btn-line" href="https://wa.me/79262443737" target="_blank" rel="noopener">WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="ftr">
+  <div class="wrap">
+    <a class="logo" href="#top"><span class="logo-mark">МК</span><span class="logo-txt">Мясо Кубани <em>&amp; стейки</em></span></a>
+    <nav aria-label="Ссылки"><a href="https://vk.ru/steykribaykupit" target="_blank" rel="noopener">ВКонтакте</a><a href="https://wa.me/79262443737" target="_blank" rel="noopener">WhatsApp</a><a href="https://viber.click/79262443737" target="_blank" rel="noopener">Viber</a></nav>
+    <span>© 2026 · Цены на сайте не являются публичной офертой</span>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drTitle" hidden>
+  <div class="dr-h"><h3 id="drTitle">Ваш заказ</h3><button class="x" id="cartClose" aria-label="Закрыть корзину">×</button></div>
+  <div class="dr-b" id="drBody"></div>
+</aside>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- data ---------- */
+const MEAT=[
+ {id:'a5',name:'Вагю A5',sub:'Рибай · Япония',txt:'Высшая категория японской оценки. Режем тонко: 1,5–2 см на сковороду или 3 мм для сукияки и шабу-шабу.',img:'img/wagyu-a5.jpg',bms:[10,12],price:28000,unit:'kg',step:.1,min:.2},
+ {id:'ribeye-wagyu',name:'Рибай вагю',sub:'Кроссбред · зерновой откорм',txt:'Целым куском для запекания или стейками нужной толщины. Крупная «глазка» жира в центре даёт сочность.',img:'img/ribeye-wagyu.jpg',bms:[8,9],price:9900,unit:'kg',step:.5,min:.5},
+ {id:'striploin',name:'Стриплойн вагю',sub:'Толстый край · Нью-Йорк',txt:'Плотная текстура и жировая корочка по краю. Хорош на гриле, жарить до 54–57 °C.',img:'img/striploin-wagyu.jpg',bms:[7,8],price:8500,unit:'kg',step:.5,min:.5},
+ {id:'medallions',name:'Филе-миньон',sub:'Медальоны из вырезки вагю',txt:'Самая нежная часть туши. Порции по 180–200 г, готовые к сковороде.',img:'img/tenderloin-medallions.jpg',bms:[6,7],price:12000,unit:'pc',w:.19},
+ {id:'ribeye-steaks',name:'Рибай-стейк',sub:'Зерновой откорм 200+ дней',txt:'Классический стейк толщиной 3–4 см, около 450 г. Лучший выбор для первого гриля.',img:'img/ribeye-steaks.jpg',bms:[5,6],price:4500,unit:'pc',w:.45},
+ {id:'chuck',name:'Чак-ролл',sub:'Шея · зерновой откорм',txt:'Мраморная шейная часть. Для томления, бургеров и альтернативных стейков: Денвер, чак-ай.',img:'img/chuck-roll.jpg',bms:[3,4],price:1600,unit:'kg',step:.5,min:1},
+ {id:'ribeye-vac',name:'Рибай в вакууме',sub:'Около 350 г · хранится 14 дней',txt:'Готовый стейк в вакуумной упаковке. Удобно взять про запас.',img:'img/ribeye-vacuum.jpg',bms:[2,3],price:3200,unit:'pc',w:.35},
+ {id:'bones',name:'Мозговые кости',sub:'Распил 5–7 см',txt:'Для запекания с солью и хлебом или для наваристого бульона.',img:'img/marrow-bones.jpg',bms:null,price:350,unit:'kg',step:.5,min:1}
+];
+const CHEESE=[
+ {id:'parmesan',name:'Пармезан',age:'12 мес',fat:'40%',img:'img/cheese-parmesan.webp',price:2900,unit:'kg',step:.25,min:.25},
+ {id:'godunov',name:'Годуновъ',age:'6 мес',fat:'40%',img:'img/cheese-godunov.webp',price:2300,unit:'kg',step:.25,min:.25},
+ {id:'beaufort',name:'Бофор',age:'4 мес',fat:'50%',img:'img/cheese-beaufort.webp',price:2400,unit:'kg',step:.25,min:.25},
+ {id:'kostroma',name:'Старая Кострома',age:'4 мес',fat:'50%',img:'img/cheese-staraya-kostroma.webp',price:1900,unit:'kg',step:.25,min:.25},
+ {id:'raclette',name:'Раклет',age:'3 мес',fat:'50%',img:'img/cheese-raclette.webp',price:2200,unit:'kg',step:.25,min:.25},
+ {id:'truffle',name:'Трюфель',age:'2 мес',fat:'50%',img:'img/cheese-truffle.webp',price:2600,unit:'kg',step:.25,min:.25},
+ {id:'butter',name:'Масло Премиум',age:'170 г',fat:'82,5%',img:'img/cheese-butter-premium.webp',price:2290,unit:'pc',w:.17,isButter:1}
+];
+const SETS=[
+ {id:'set-two',name:'Вечер на двоих',for:'2 персоны',img:'img/ribeye-steaks.jpg',price:4900,was:5164,items:[['Рибай-стейк','2 шт · ≈ 900 г'],['Масло Премиум 82,5%','170 г'],['Пармезан, 12 мес','250 г']]},
+ {id:'set-wagyu',name:'Вагю-дегустация',for:'2–4 персоны · хит',img:'img/wagyu-a5.jpg',price:13900,was:15060,hero:1,items:[['Вагю A5, рибай','200 г'],['Стриплойн вагю','500 г'],['Филе-миньон вагю','2 шт'],['Сыр с трюфелем','250 г']]},
+ {id:'set-grill',name:'Гриль на компанию',for:'6–8 персон',img:'img/chuck-roll.jpg',price:9900,was:11150,items:[['Рибай-стейк','4 шт · ≈ 1,8 кг'],['Чак-ролл для бургеров','1 кг'],['Мозговые кости','1 кг'],['Раклет для плавления','500 г']]}
+];
+const ALL={};[...MEAT,...CHEESE].forEach(p=>ALL[p.id]=p);SETS.forEach(s=>ALL[s.id]={...s,unit:'set'});
+
+const rub=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
+const kgf=n=>(Math.round(n*100)/100).toLocaleString('ru-RU')+' кг';
+const qLabel=(p,q)=>p.unit==='kg'?kgf(q):q+' шт';
+const lineSum=(p,q)=>p.unit==='kg'?p.price*q:p.unit==='pc'?p.price*p.w*q:p.price*q;
+const minQ=p=>p.unit==='kg'?p.min:1, stepQ=p=>p.unit==='kg'?p.step:1;
+const unitPrice=p=>p.unit==='pc'?rub(p.price*p.w)+' / шт':rub(p.price)+' / кг';
+
+/* ---------- cart state ---------- */
+let cart={};try{cart=JSON.parse(localStorage.getItem('mk2-cart')||'{}')||{}}catch(e){cart={}}
+const save=()=>{try{localStorage.setItem('mk2-cart',JSON.stringify(cart))}catch(e){}};
+function addToCart(id,q){const p=ALL[id];cart[id]=Math.round(((cart[id]||0)+q)*100)/100;save();renderCount(true);toast(p.name+' — в корзине')}
+function renderCount(pop){const c=$('#cartCount');c.textContent=Object.keys(cart).filter(k=>ALL[k]).length;if(pop){c.classList.add('pop');setTimeout(()=>c.classList.remove('pop'),350)}}
+
+/* hero specimen parallax */
+const spec=$('#specimen'),hero=$('.hero');
+if(!RM&&matchMedia('(hover:hover)').matches){hero.addEventListener('pointermove',e=>{const r=hero.getBoundingClientRect();spec.style.setProperty('--mx',((e.clientX-r.left)/r.width-.5)*-26+'px');spec.style.setProperty('--my',((e.clientY-r.top)/r.height-.5)*-26+'px')})}
+
+/* header */
+const hdr=$('#hdr');const onS=()=>hdr.classList.toggle('solid',scrollY>40);addEventListener('scroll',onS,{passive:true});onS();
+const burger=$('#burger'),mnav=$('#mnav');
+function menu(open){mnav.hidden=!open;burger.setAttribute('aria-expanded',open);hdr.classList.toggle('menu',open);document.documentElement.style.overflow=open?'hidden':'';burger.innerHTML=open?'<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.4"/></svg>':'<svg width="18" height="10" viewBox="0 0 18 10" fill="none"><path d="M0 1h18M0 9h18" stroke="currentColor" stroke-width="1.4"/></svg>'}
+burger.onclick=()=>menu(mnav.hidden);
+mnav.addEventListener('click',e=>{if(e.target.closest('nav a'))menu(false)});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!mnav.hidden)menu(false)});
+
+/* ---------- 3a. cut index ---------- */
+const ticks=r=>{let s='';for(let i=1;i<=12;i++)s+=`<i class="${r&&i>=r[0]&&i<=r[1]?'on':''}"></i>`;return s};
+const pick={};MEAT.forEach(p=>pick[p.id]=minQ(p));CHEESE.forEach(p=>pick[p.id]=minQ(p));
+$('#index').innerHTML=MEAT.map(p=>`<li class="cut" data-id="${p.id}">
+  <button class="cut-row" aria-expanded="false" aria-controls="more-${p.id}">
+    <span class="cut-ph"><img src="${p.img}" alt="${p.name}: ${p.sub}" loading="lazy"></span>
+    <span class="cut-main"><span class="cut-bms mono num">${p.bms?'BMS '+p.bms[0]+'–'+p.bms[1]:'Для бульона'}</span><span class="cut-name">${p.name}</span><span class="cut-sub">${p.sub}</span></span>
+    <span class="cut-price num">${unitPrice(p)}${p.unit==='pc'?`<small>${rub(p.price)} / кг</small>`:''}</span>
+    <span class="cut-plus" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v14M0 7h14" stroke="currentColor" stroke-width="1.4"/></svg></span>
+  </button>
+  <div class="cut-more" id="more-${p.id}" hidden>
+    <span></span>
+    <div class="tx">
+      <p>${p.txt}</p>
+      ${p.bms?`<div class="bms-meter"><div class="ticks">${ticks(p.bms)}</div><div class="ax mono num"><span>BMS 1</span><span>Мраморность ${p.bms[0]}–${p.bms[1]}</span><span>12</span></div></div>`:''}
+      <div class="buy">
+        <div class="stepper"><button data-dec="${p.id}" aria-label="Меньше">−</button><output id="q-${p.id}" class="num">${qLabel(p,pick[p.id])}</output><button data-inc="${p.id}" aria-label="Больше">+</button></div>
+        <span class="line-total num" id="lt-${p.id}">${rub(lineSum(p,pick[p.id]))}</span>
+        <button class="btn btn-fill" data-add="${p.id}">В корзину <span class="ar">→</span></button>
+      </div>
+    </div>
+  </div>
+</li>`).join('');
+function bump(id,dir){const p=ALL[id];pick[id]=Math.max(minQ(p),Math.round((pick[id]+dir*stepQ(p))*100)/100);const o=$('#q-'+id);if(o)o.textContent=qLabel(p,pick[id]);const l=$('#lt-'+id);if(l)l.textContent=rub(lineSum(p,pick[id]))}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-dec],[data-inc],[data-add],[data-set]');if(!t||t.closest('#drawer'))return;
+  if(t.dataset.dec)bump(t.dataset.dec,-1);
+  else if(t.dataset.inc)bump(t.dataset.inc,1);
+  else if(t.dataset.add){addToCart(t.dataset.add,pick[t.dataset.add]);if(t.classList.contains('add-ico')){t.classList.add('done');t.textContent='Добавлено';setTimeout(()=>{t.classList.remove('done');t.textContent='В корзину'},1400)}}
+  else if(t.dataset.set)addToCart(t.dataset.set,1);
+});
+$('#index').addEventListener('click',e=>{
+  const row=e.target.closest('.cut-row');if(!row)return;
+  const li=row.parentElement,more=li.querySelector('.cut-more'),open=more.hidden;
+  more.hidden=!open;li.classList.toggle('open',open);row.setAttribute('aria-expanded',open);
+});
+/* ---------- 3b. doneness ---------- */
+const DN=[[46,'#5E0F17','Blue','Холодный красный центр','<b>Для тартара-стейка и вагю A5 тонкой нарезки.</b> Обжарьте 30–40 секунд на сторону на раскалённой сковороде.',70],
+ [51,'#7E1A22','Rare','С кровью, тёплый центр','<b>Для толстого рибая зернового откорма.</b> Корочка снаружи, внутри почти сырое мясо.',60],
+ [55,'#B03A40','Medium rare','Розовый и сочный центр','<b>Лучший выбор для вагю и стриплойна.</b> Межмышечный жир уже растаял, сок остаётся внутри.',50],
+ [60,'#B8665C','Medium','Розовый центр, плотнее','<b>Для чак-ролла и стейка Денвер.</b> Соединительная ткань размягчается, мясо остаётся сочным.',36],
+ [65,'#8E6A60','Medium well','Слегка розовый','<b>Если гости не любят розовое мясо.</b> Берите отруб с высокой мраморностью, он прощает лишние градусы.',20],
+ [70,'#6A5550','Well done','Прожаренный насквозь','<b>Мраморное мясо лучше не доводить до этой точки.</b> Если нужно, выбирайте медленное томление чак-ролла.',4]];
+const hx=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)), toHex=a=>'#'+a.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+function setT(v){
+  let i=0;while(i<DN.length-1&&v>=DN[i+1][0])i++;
+  const a=DN[i],b=DN[Math.min(i+1,DN.length-1)],k=b===a?0:Math.min(1,Math.max(0,(v-a[0])/(b[0]-a[0])));
+  const c=hx(a[1]).map((x,j)=>x+(hx(b[1])[j]-x)*k), core=a[5]+(b[5]-a[5])*k;
+  const near=DN.reduce((m,d)=>Math.abs(d[0]-v)<Math.abs(m[0]-v)?d:m);
+  const st=$('#steak');st.style.setProperty('--c',toHex(c));st.style.setProperty('--core',core+'%');
+  $('#tVal').innerHTML=v+'<sup>°</sup>';$('#tName').textContent=near[2];$('#tRu').textContent=near[3];$('#tAdvice').innerHTML=near[4];
+}
+$('#tRange').addEventListener('input',e=>setT(+e.target.value));setT(55);
+
+/* ---------- 3c. cheese rail ---------- */
+$('#rail').innerHTML=CHEESE.map(p=>`<article class="wheel">
+  <div class="pic"><img src="${p.img}" alt="Сыр ${p.name}, Боговарово" loading="lazy"></div>
+  <h3>${p.name}</h3>
+  <div class="meta mono num"><span>${p.isButter?'Вес':'Выдержка'} ${p.age}</span><span>Жирность ${p.fat}</span></div>
+  <div class="row"><span class="pr num">${unitPrice(p)}${p.unit==='kg'?'<small>режем от 250 г</small>':''}</span><button class="add-ico" data-add="${p.id}">В корзину</button></div>
+</article>`).join('');
+const rail=$('#rail');const by=d=>rail.scrollBy({left:d*Math.min(rail.clientWidth*.8,420),behavior:RM?'auto':'smooth'});
+$('#railPrev').onclick=()=>by(-1);$('#railNext').onclick=()=>by(1);
+
+/* ---------- 5. process ---------- */
+const ST=[
+ ['10:40','Заказ','Вы выбираете отруб на сайте или пишете в WhatsApp: какой стейк, какой толщины, к какому времени.','img/ribeye-wagyu.jpg'],
+ ['11:15','Нарезка и звонок','Мясник режет мясо по вашим пожеланиям, взвешивает и звонит назвать точный вес и сумму.','img/striploin-wagyu.jpg'],
+ ['12:30','Вакуум и холод','Каждый кусок упаковываем в вакуум и кладём в термосумку с хладоэлементами.','img/ribeye-vacuum.jpg'],
+ ['14:00','У вашей двери','Курьер привозит заказ в выбранное двухчасовое окно. Оплата картой, по СБП или наличными.','img/ribeye-steaks.jpg']];
+$('#steps').innerHTML=ST.map((s,i)=>`<button class="stp" role="tab" id="tab-${i}" aria-selected="${i===0}" aria-controls="panel" tabindex="${i===0?0:-1}"><span class="tm num">${s[0]}</span><span class="ti">${s[1]}</span><span class="pg"></span></button>`).join('');
+$('#panelPh').innerHTML=ST.map((s,i)=>`<img src="${s[3]}" alt="" class="${i===0?'on':''}" loading="lazy">`).join('');
+let cur=0,timer=0,auto=!RM,startT=0,pRaf=0;const DUR=5200;
+function show(i,user){
+  cur=(i+ST.length)%ST.length;
+  $$('.stp').forEach((b,j)=>{b.setAttribute('aria-selected',j===cur);b.tabIndex=j===cur?0:-1;b.querySelector('.pg').style.transform='scaleX(0)'});
+  $$('#panelPh img').forEach((im,j)=>im.classList.toggle('on',j===cur));
+  $('#pBig').textContent=String(cur+1).padStart(2,'0');$('#pTitle').textContent=ST[cur][1];$('#pText').textContent=ST[cur][2];
+  $('#panel').setAttribute('aria-labelledby','tab-'+cur);
+  if(user)auto=false;startT=performance.now();
+}
+function tick(now){if(auto&&procVis){const k=(now-startT)/DUR;const pg=$$('.stp')[cur].querySelector('.pg');pg.style.transform=`scaleX(${Math.min(1,k)})`;if(k>=1)show(cur+1)}pRaf=requestAnimationFrame(tick)}
+let procVis=false;new IntersectionObserver(es=>{procVis=es[0].isIntersecting;if(procVis)startT=performance.now()},{threshold:.35}).observe($('#process'));
+$('#steps').addEventListener('click',e=>{const b=e.target.closest('.stp');if(b)show($$('.stp').indexOf(b),true)});
+$('#steps').addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();show(cur+1,true);$$('.stp')[cur].focus()}if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();show(cur-1,true);$$('.stp')[cur].focus()}});
+show(0);if(!RM)pRaf=requestAnimationFrame(tick);
+
+/* ---------- 6. offer ---------- */
+$('#menu').innerHTML=SETS.map(s=>`<article class="set${s.hero?' hero-set':''}">
+  <span class="for mono">${s.for}</span>
+  <h3>${s.name}</h3>
+  <ul>${s.items.map(it=>`<li><span>${it[0]}</span><span class="d"></span><span class="w num">${it[1]}</span></li>`).join('')}</ul>
+  <div class="price"><b class="num">${rub(s.price)}</b><s class="num">${rub(s.was)}</s></div>
+  <button class="btn btn-ink" data-set="${s.id}">Добавить набор <span class="ar">→</span></button>
+</article>`).join('');
+
+/* ---------- cart drawer ---------- */
+const drawer=$('#drawer'),scrim=$('#scrim');let lastF=null,done=false;
+const total=()=>Object.entries(cart).reduce((s,[id,q])=>ALL[id]?s+lineSum(ALL[id],q):s,0);
+function dates(){const o=[],d=new Date(),wd=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],mo=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];for(let i=0;o.length<6&&i<10;i++){const x=new Date(d);x.setDate(d.getDate()+i);if(x.getDay()===1)continue;o.push((i===0?'Сегодня, ':i===1?'Завтра, ':wd[x.getDay()]+', ')+x.getDate()+' '+mo[x.getMonth()])}return o}
+function renderDrawer(){
+  const b=$('#drBody');
+  if(done){b.innerHTML=`<div class="ok-box"><span class="mono" style="color:var(--brass)">Заказ принят</span><b>Мясник позвонит в течение 15 минут</b><p>Он уточнит точный вес после нарезки и согласует время доставки.</p><p class="note">Демо-версия: заявка никуда не отправляется.</p><button class="btn btn-line" id="again">Вернуться на сайт</button></div>`;return}
+  const ids=Object.keys(cart).filter(id=>ALL[id]);
+  if(!ids.length){b.innerHTML=`<div class="empty"><b>Корзина пока пуста</b><span>Выберите отруб или готовый набор, а толщину стейков подскажет мясник.</span><a class="btn btn-fill" href="#cuts" data-close>К отрубам <span class="ar">→</span></a></div>`;return}
+  const rows=ids.map(id=>{const p=ALL[id],q=cart[id];return `<div class="ci"><img src="${p.img}" alt="" class="${p.img.endsWith('.webp')?'cz':''}"><div><b>${p.name}</b><small class="num">${p.unit==='set'?'Набор':p.unit==='pc'?'≈ '+kgf(p.w*q)+' · '+rub(p.price)+'/кг':rub(p.price)+'/кг'}</small></div><div class="r"><span class="num">${rub(lineSum(p,q))}</span><div class="stepper"><button data-cdec="${id}" aria-label="Меньше">−</button><output class="num">${qLabel(p,q)}</output><button data-cinc="${id}" aria-label="Больше">+</button></div></div></div>`}).join('');
+  const t=total(),free=t>=5000;
+  b.innerHTML=rows+`<div class="sum"><div><span>Товары</span><span class="num">${rub(t)}</span></div><div><span>Доставка</span><span class="num">${free?'Бесплатно':'500 ₽'}</span></div><div class="tot"><span>Итого ≈</span><span class="num">${rub(free?t:t+500)}</span></div><p class="note">Мясо и сыр продаются на вес, итоговую сумму мясник подтвердит после нарезки.${free?'':' До бесплатной доставки: '+rub(5000-t)+'.'}</p></div>
+  <form class="order" id="order" novalidate>
+   <div class="seg" role="radiogroup" aria-label="Способ получения"><input type="radio" name="how" id="how-d" value="d" checked><label for="how-d">Доставка</label><input type="radio" name="how" id="how-p" value="p"><label for="how-p">Самовывоз</label></div>
+   <div class="row2"><div class="fld"><label for="f-name">Имя</label><input id="f-name" autocomplete="given-name" placeholder="Анна"></div><div class="fld"><label for="f-tel">Телефон</label><input id="f-tel" type="tel" autocomplete="tel" placeholder="+7 900 000-00-00"></div></div>
+   <div class="fld" id="addrFld"><label for="f-addr">Адрес</label><input id="f-addr" autocomplete="street-address" placeholder="Улица, дом, квартира"></div>
+   <div class="row2"><div class="fld"><label for="f-date">День</label><select id="f-date">${dates().map(d=>`<option>${d}</option>`).join('')}</select></div><div class="fld"><label for="f-time">Время</label><select id="f-time"><option>10:00–12:00</option><option>12:00–14:00</option><option>14:00–16:00</option><option>16:00–18:00</option><option>18:00–20:00</option></select></div></div>
+   <div class="fld"><label for="f-note">Пожелания мяснику</label><textarea id="f-note" placeholder="Например: рибай толщиной 3 см, кости распилить"></textarea></div>
+   <p class="err" id="formErr" hidden></p>
+   <button class="btn btn-fill" type="submit" style="justify-content:center">Оформить заказ <span class="ar">→</span></button>
+  </form>`;
+}
+function openCart(){lastF=document.activeElement;renderDrawer();drawer.hidden=false;scrim.hidden=false;document.documentElement.style.overflow='hidden';$('#cartClose').focus()}
+function closeCart(){drawer.hidden=true;scrim.hidden=true;document.documentElement.style.overflow='';done=false;if(lastF&&lastF.focus)lastF.focus()}
+$('#cartOpen').onclick=openCart;$('#mnCart').onclick=()=>{menu(false);openCart()};$('#ctaCart').onclick=openCart;$('#cartClose').onclick=closeCart;scrim.onclick=closeCart;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden)closeCart()});
+drawer.addEventListener('click',e=>{
+  const t=e.target.closest('button,a');if(!t)return;
+  if(t.dataset.close!==undefined||t.id==='again'){closeCart();return}
+  const id=t.dataset.cdec||t.dataset.cinc;if(!id)return;const p=ALL[id];
+  const q=Math.round((cart[id]+(t.dataset.cinc?stepQ(p):-stepQ(p)))*100)/100;
+  if(q<minQ(p))delete cart[id];else cart[id]=q;save();renderCount();renderDrawer();
+});
+drawer.addEventListener('change',e=>{if(e.target.name==='how')$('#addrFld').hidden=e.target.value==='p'});
+drawer.addEventListener('submit',e=>{e.preventDefault();
+  const name=$('#f-name').value.trim(),tel=$('#f-tel').value.replace(/\D/g,''),pickup=$('#how-p').checked,addr=$('#f-addr').value.trim();
+  const err=[];if(!name)err.push('имя');if(tel.length<10)err.push('телефон из 10–11 цифр');if(!pickup&&!addr)err.push('адрес доставки');
+  const box=$('#formErr');if(err.length){box.textContent='Заполните: '+err.join(', ')+'.';box.hidden=false;return}
+  cart={};save();renderCount();done=true;renderDrawer();
+});
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,1800)}
+renderCount();
+})();
+</script>

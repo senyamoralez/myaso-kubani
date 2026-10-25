@@ -1,0 +1,12 @@
+# секреты и данные заказов
+.env
+bot/.env
+bot/data/
+bot/pay-qr.png
+# служебное
+node_modules/
+tools/src/
+tools/page.html
+*.zip
+.DS_Store
+Thumbs.db

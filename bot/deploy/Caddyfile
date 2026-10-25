@@ -1,0 +1,4 @@
+# /etc/caddy/Caddyfile — Caddy сам получит HTTPS-сертификат
+api.ВАШ-ДОМЕН.ru {
+	reverse_proxy 127.0.0.1:8080
+}

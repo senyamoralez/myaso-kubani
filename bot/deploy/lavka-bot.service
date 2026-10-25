@@ -1,0 +1,14 @@
+# /etc/systemd/system/lavka-bot.service
+[Unit]
+Description=Lavka orders bot
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/lavka-bot
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+User=www-data
+
+[Install]
+WantedBy=multi-user.target

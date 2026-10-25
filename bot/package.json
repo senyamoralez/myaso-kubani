@@ -1,0 +1,14 @@
+{
+  "name": "lavka-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Сервер заказов, личный кабинет и Telegram-бот «Мясо Кубани и стейки»",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/e2e.js && node test/account.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
