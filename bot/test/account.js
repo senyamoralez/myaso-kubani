@@ -13,7 +13,7 @@ let queue = [], waiters = [], upd = 1, msgId = 100;
 const push = u => { u.update_id = upd++; if (srv.hook) return srv.hook(u); queue.push(u); waiters.splice(0).forEach(w => w()); };
 const mock = http.createServer((req, res) => {
   let b = ''; req.on('data', c => b += c); req.on('end', () => {
-    const body = b ? JSON.parse(b) : {}, method = req.url.split('/').pop();
+    let body = {}; try { body = b ? JSON.parse(b) : {}; } catch (e) { body = { multipart: true }; } const method = req.url.split('/').pop();
     let done = false;
     const ok = r => { if (done) return; done = true; res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: true, result: r })); };
     if (method === 'getMe') return ok({ id: 1, username: 'lavka_bot' });

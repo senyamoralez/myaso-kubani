@@ -7,6 +7,12 @@ compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
+# картинки (аватар группы) подключаются как бинарные данные
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
+fallthrough = false
+
 [[durable_objects.bindings]]
 name = "SHOP"
 class_name = "Shop"

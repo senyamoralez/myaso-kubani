@@ -13,7 +13,7 @@ function push(u) { u.update_id = upd++; if (srv.hook) return srv.hook(u); queue.
 
 const mock = http.createServer((req, res) => {
   let b = ''; req.on('data', c => b += c); req.on('end', async () => {
-    const body = b ? JSON.parse(b) : {}; const method = req.url.split('/').pop();
+    let body = {}; try { body = b ? JSON.parse(b) : {}; } catch (e) { body = { multipart: true }; }; const method = req.url.split('/').pop();
     let done = false;
     const ok = r => { if (done) return; done = true; res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: true, result: r })); };
     if (method === 'getMe') return ok({ id: 1, is_bot: true, username: 'lavka_test_bot' });
@@ -84,14 +84,53 @@ let staffMsg;
     assert.ok(ask, 'weigh prompt');
     push({ message: { message_id: 2, chat: { id: STAFF, type: 'supergroup' }, from: { id: 7, first_name: 'Сергей' }, text: '9 480', reply_to_message: { message_id: ask.message_id } } });
     await wait(400);
+
+    // 6a. возврат 170 ₽: бот спрашивает покупателя, куда вернуть
+    const askR = sent.find(m => m.chat_id == CUSTOMER && /Возврат 170/.test(m.text || ''));
+    assert.ok(askR, 'вопрос о возврате'); assert.ok(askR.reply_markup.inline_keyboard.flat().some(b => b.callback_data === 'rc:' + o.no));
+    press('rc:' + o.no, 999); await wait(200);
+    press('rc:' + o.no, CUSTOMER, 'Анна'); await wait(300);
+    push({ message: { message_id: 10, chat: { id: CUSTOMER, type: 'private' }, from: { id: CUSTOMER }, text: '4111 1111 1111 1112' } }); await wait(300);
+    assert.match(sent.at(-1).text, /ошибка/);
+    push({ message: { message_id: 11, chat: { id: CUSTOMER, type: 'private' }, from: { id: CUSTOMER }, text: '4111 1111 1111 1111' } }); await wait(400);
+    assert.ok(sent.some(m => m.chat_id == CUSTOMER && /•••• 1111/.test(m.text || '')));
+    assert.match(lastStaff().text, /4111 1111 1111 1111/);
+    press('refunded:' + o.no, STAFF, 'Ирина'); await wait(400);
+    assert.doesNotMatch(lastStaff().text, /4111 1111 1111 1111/); assert.match(lastStaff().text, /Возвращено 170/);
+    assert.ok(sent.some(m => m.chat_id == CUSTOMER && /Вернули 170/.test(m.text || '')));
+
     press('road:' + o.no, STAFF, 'Дмитрий'); await wait(300);
     press('done:' + o.no, STAFF, 'Дмитрий'); await wait(300);
 
     r = await api(`/api/orders/${o.no}?token=${o.token}`); assert.equal(r.j.status, 'done'); assert.equal(r.j.fact, 9480);
-    const custMsgs = sent.filter(m => m.chat_id == CUSTOMER).map(m => m.text.split('\n').slice(1).join(' '));
+    const custMsgs = sent.filter(m => m.chat_id == CUSTOMER && m.text).map(m => m.text.split('\n').slice(1).join(' '));
     console.log('\nПокупатель получил:\n- ' + custMsgs.join('\n- '));
-    assert.ok(custMsgs.some(t => /вернём на карту/.test(t)));
+    assert.ok(custMsgs.some(t => /Вернём вам 170/.test(t)));
     console.log('\nСообщение в рабочем чате (финал):\n' + lastStaff().text.replace(/<[^>]+>/g, ''));
+
+    // 8. изменить сумму: до оплаты меняется сумма к оплате, после — считается возврат
+    r = await api('/api/orders', { consent: true, name: 'Пётр', tel: '+79160000001', pickup: true, items: [{ id: 'ribeye-steaks', q: 1 }] });
+    const o2 = r.j; await wait(300);
+    const card2 = sent.find(m => m.chat_id == STAFF && (m.text || '').includes('№ ' + o2.no));
+    assert.ok(card2.reply_markup.inline_keyboard.flat().some(b => b.callback_data === 'fix:' + o2.no));
+    const fix = async (sumText) => {
+      press('fix:' + o2.no, STAFF, 'Ирина'); await wait(300);
+      const askF = [...sent].reverse().find(m => m.reply_markup?.force_reply && /новой суммой/.test(m.text));
+      push({ message: { message_id: 20 + upd, chat: { id: STAFF, type: 'supergroup' }, from: { id: 7, first_name: 'Ирина' }, text: sumText, reply_to_message: { message_id: askF.message_id } } }); await wait(400);
+    };
+    await fix('1500 ошиблись в цене');
+    r = await api(`/api/orders/${o2.no}?token=${o2.token}`); assert.equal(r.j.total, 1500);
+    press('paid:' + o2.no, STAFF, 'Ирина'); await wait(300);
+    await fix('1300');
+    const st2 = [...edits].reverse().find(e => e.chat_id == STAFF && (e.text || '').includes('№ ' + o2.no)).text;
+    assert.match(st2, /Сумма изменена: 2 025 ₽ → <b>1 500 ₽<\/b> \(ошиблись в цене\)/); assert.match(st2, /Вернуть 200 ₽/); assert.match(st2, /уточните по телефону/);
+    console.log('\nКарточка после правки суммы:\n' + st2.replace(/<[^>]+>/g, ''));
+
+    // 9. меню покупателя
+    push({ message: { message_id: 30, chat: { id: CUSTOMER, type: 'private' }, from: { id: CUSTOMER, first_name: 'Анна' }, text: '📦 Мои заказы' } }); await wait(300);
+    assert.match(sent.at(-1).text, new RegExp('№ ' + o.no));
+    push({ message: { message_id: 31, chat: { id: CUSTOMER, type: 'private' }, from: { id: CUSTOMER, first_name: 'Анна' }, text: '📍 Адрес и часы' } }); await wait(300);
+    assert.match(sent.at(-1).text, /Таллинская/); assert.ok(sent.at(-1).reply_markup.inline_keyboard[0][0].url.includes('yandex'));
 
     // 7. reports
     push({ message: { message_id: 3, chat: { id: STAFF, type: 'supergroup' }, from: { id: 7 }, text: '/today' } }); await wait(300);

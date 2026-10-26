@@ -7,12 +7,12 @@ const crypto = require('node:crypto');
 const { startServer } = require('../bot/test/target');
 
 const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex');
-const sent = [], hooks = [];
+const sent = [], hooks = [], calls = [];
 let msgId = 10;
 const mock = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url.endsWith('/photos/qr.png')) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
   let b = ''; req.on('data', c => b += c); req.on('end', () => {
-    const body = b ? JSON.parse(b) : {}, method = req.url.split('/').pop();
+    let body = {}; try { body = b ? JSON.parse(b) : {}; } catch (e) { body = { multipart: true }; } const method = req.url.split('/').pop(); calls.push({ method, body });
     const ok = r => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: true, result: r })); };
     if (method === 'getMe') return ok({ id: 1, is_bot: true, username: 'lavka_cf_bot' });
     if (method === 'setWebhook') { hooks.push(body); return ok(true); }
@@ -52,7 +52,13 @@ async function api(p, body, auth) {
     assert.equal((await tgPost({ message: {} }, HOOK, 'bad')).status, 403);
     ok('чужие запросы на вебхук отклоняются');
 
-    await msg(-100500, '/staff'); assert.match(sent.at(-1).text, /рабочий чат лавки/);
+    assert.ok(calls.some(c => c.method === 'setMyDescription') && calls.some(c => c.method === 'setMyCommands' && c.body.scope?.type === 'all_private_chats'));
+    ok('описание и меню команд бота настраиваются сами');
+    await msg(-100500, '/staff'); assert.ok(sent.some(m => /рабочий чат лавки/.test(m.text)));
+    for (const m of ['setChatTitle', 'setChatDescription', 'setChatPhoto', 'pinChatMessage']) assert.ok(calls.some(c => c.method === m), m);
+    assert.ok(calls.find(c => c.method === 'setChatPhoto').body.multipart);
+    assert.match(sent.at(-1).text, /✅ Аватар/); assert.match(sent.at(-1).text, /✅ Шпаргалка/);
+    ok('группа оформляется: название, описание, аватар, команды, шпаргалка в закрепе');
     r = await api('/health'); assert.equal(r.j.staffChat, true);
     await msg(-100777, '/staff'); assert.match(sent.at(-1).text, /уже назначен/);
     ok('/staff назначает рабочий чат один раз');

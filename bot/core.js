@@ -25,10 +25,16 @@ function configFromEnv(E) {
     maxBonusShare: +(E.MAX_BONUS_SHARE || 0.3),
     levels: JSON.parse(E.LEVELS || '[{"name":"Choice","from":0,"rate":0.03},{"name":"Prime","from":20000,"rate":0.05},{"name":"Вагю A5","from":60000,"rate":0.07}]'),
     sms: { provider: E.SMS_PROVIDER || '', key: E.SMS_API_KEY || '', from: E.SMS_FROM || '' },
+    siteUrl: E.SITE_URL || 'http://lidmasterapp.ru/myaso-kubani/',
+    mapUrl: E.MAP_URL || 'https://yandex.ru/maps/org/myaso_kubani_i_steyki/72276710971/',
+    hours: E.SHOP_HOURS || 'Вт–Вс, 10:00–20:00',
+    whatsapp: E.WHATSAPP_URL || 'https://wa.me/79262443737',
+    vk: E.VK_URL || 'https://vk.ru/steykribaykupit',
+    welcomePhoto: E.WELCOME_PHOTO != null ? E.WELCOME_PHOTO : (E.SITE_URL || 'http://lidmasterapp.ru/myaso-kubani/') + 'img/hero-ribeye.jpg',
   };
 }
 const emptyDb = () => ({ seq: 1000, orders: {}, pending: {}, offset: 0, lastSummary: '', users: {}, sessions: {}, logins: {}, lastBirthday: '',
-  secret: '', staffChat: '', qr: null, webhookUrl: '' });
+  secret: '', staffChat: '', qr: null, webhookUrl: '', custWait: {} });
 
 /**
  * opts: { C, db, save(), catalog: items[], crypto, Buffer, readQrFile?(): {bytes,type}|null, log? }
@@ -104,6 +110,16 @@ function createShop(opts) {
     try { ME = await tg('getMe'); } catch (e) { log.error('Telegram недоступен или неверный BOT_TOKEN:', e.message); }
     return ME;
   }
+  // Загрузка файла (фото группы) через multipart
+  async function tgUpload(method, fields, field, bytes, filename, type) {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(fields)) fd.append(k, String(v));
+    fd.append(field, new Blob([bytes], { type }), filename);
+    const r = await fetch(`${C.api}/bot${C.token}/${method}`, { method: 'POST', body: fd });
+    const j = await r.json().catch(() => ({ ok: false, description: 'bad json' }));
+    if (!j.ok) throw new Error(`${method}: ${j.description || r.status}`);
+    return j.result;
+  }
 
   const ST = {
     new:    { t: 'Ждёт оплаты',          e: '🟡' },
@@ -115,6 +131,7 @@ function createShop(opts) {
     done:   { t: 'Выполнен',             e: '✅' },
     cancel: { t: 'Отменён',              e: '⛔' },
   };
+  const STATUS_PUBLIC = { new: 'Ждёт оплаты', claimed: 'Проверяем оплату', paid: 'Оплачен', work: 'В работе', packed: 'Собран', road: 'В пути', done: 'Выполнен', cancel: 'Отменён' };
   const CUSTOMER_TEXT = {
     new: 'Заказ создан и ждёт оплаты.',
     claimed: 'Спасибо! Проверяем поступление оплаты, обычно это 5–10 минут.',
@@ -125,25 +142,64 @@ function createShop(opts) {
     done: 'Заказ выполнен. Спасибо, что выбрали нас!',
     cancel: 'Заказ отменён. Если это ошибка, позвоните нам.',
   };
+  const site = (hash = '') => C.siteUrl + hash;
+  const urlBtn = (text, url) => ({ text, url });
+  const fmtCard = d => d.replace(/(\d{4})(?=\d)/g, '$1 ');
+  const luhn = d => { let s = 0; for (let i = 0; i < d.length; i++) { let x = +d[d.length - 1 - i]; if (i % 2) { x *= 2; if (x > 9) x -= 9; } s += x; } return s % 10 === 0; };
+  const BANKS = ['Сбербанк', 'Т-Банк', 'Альфа-Банк', 'ВТБ', 'Райффайзенбанк', 'Озон Банк', 'Яндекс Банк'];
+  const PAID_STATES = ['claimed', 'paid', 'work', 'packed', 'road', 'done'];
+
+  /* ---------- деньги: изменение суммы, возврат, доплата ---------- */
+  // Покупатель заплатил o.total (если статус не «new»). o.final — сколько заказ стоит в итоге (после взвешивания или правки).
+  function moneyDue(o) {
+    if (!PAID_STATES.includes(o.status) && o.status !== 'cancel') return 0;
+    if (o.status === 'cancel' && !o.wasPaid) return 0;
+    const final = o.status === 'cancel' ? 0 : (o.final != null ? o.final : o.total);
+    return o.total - (o.refunded || 0) - final;
+  }
+  // Пересчитывает возврат/доплату. Возвращает текст для покупателя.
+  function settleMoney(o, reason) {
+    const due = moneyDue(o);
+    if (due > 0) {
+      const keep = o.refund && o.refund.status !== 'done' ? o.refund : null;
+      o.refund = { amount: due, reason, status: keep && keep.method ? 'ready' : 'ask', method: keep?.method || null, bank: keep?.bank || null, card: keep?.card || null, at: iso() };
+      o.extra = 0;
+      return `Вернём вам ${rub(due)}.`;
+    }
+    if (o.refund && o.refund.status !== 'done') o.refund = null;
+    o.extra = due < 0 ? -due : 0;
+    return due < 0 ? `Нужна доплата ${rub(-due)} — мы свяжемся с вами.` : '';
+  }
+  function refundLine(o) {
+    const r = o.refund;
+    if (!r) return '';
+    if (r.status === 'done') return `↩️ Возвращено ${rub(r.amount)}${r.method === 'card' ? ` на карту •••• ${r.last4}` : r.bank ? ` по СБП, ${esc(r.bank)}` : ''}`;
+    const head = `↩️ <b>Вернуть ${rub(r.amount)}</b>${r.reason ? ` (${esc(r.reason)})` : ''}`;
+    if (r.method === 'sbp') return `${head}\n    СБП на <code>${esc(o.customer.tel)}</code> · ${esc(r.bank)}`;
+    if (r.method === 'card') return `${head}\n    Карта <code>${fmtCard(r.card)}</code>`;
+    return `${head}\n    ${customerChat(o) ? 'ждём реквизиты от покупателя в боте' : 'покупатель без Telegram — уточните по телефону'}`;
+  }
 
   function orderText(o) {
     const s = ST[o.status];
     const L = [];
-    L.push(`<b>Заказ № ${o.no}</b>  ${s.e} ${esc(s.t)}`);
+    L.push(`${s.e} <b>Заказ № ${o.no}</b> · ${esc(s.t)}`);
     L.push('');
-    L.push(`👤 ${esc(o.customer.name)}, ${esc(o.customer.tel)}${o.user ? ' · личный кабинет' : ''}`);
-    L.push(o.pickup ? `🏪 Самовывоз: ${esc(C.pickupAddr)}` : `📍 ${esc(o.addr)}`);
+    L.push(`👤 ${esc(o.customer.name)} · <code>${esc(o.customer.tel)}</code>${o.user ? ' · кабинет' : ''}`);
+    L.push(o.pickup ? `🏪 Самовывоз: ${esc(C.pickupAddr)}` : `🚚 ${esc(o.addr)}`);
     L.push(`🕑 ${esc(o.date)}, ${esc(o.time)}`);
     L.push('');
     for (const i of o.items) L.push(`• ${esc(i.name)} × ${esc(i.qty)} — ${rub(i.sum)}`);
     if (o.delivery) L.push(`• Доставка — ${rub(o.delivery)}`);
     if (o.bonusUsed) L.push(`• Списано бонусов — −${rub(o.bonusUsed)}`);
-    L.push(`<b>К оплате: ${rub(o.total)}</b>`);
+    const paidNow = o.wasPaid || ['paid', 'work', 'packed', 'road', 'done'].includes(o.status);
+    L.push(`<b>${paidNow ? 'Оплачено' : 'К оплате'}: ${rub(o.total)}</b>`);
     if (o.note) L.push(`💬 ${esc(o.note)}`);
-    if (o.fact != null) {
-      const d = o.goods - o.fact;
-      L.push(`⚖️ После взвешивания: ${rub(o.fact)} · ${d >= 0 ? 'вернуть ' + rub(d) : 'доплата ' + rub(-d)}`);
-    }
+    if (o.fact != null) L.push(`⚖️ После взвешивания: товары на ${rub(o.fact)}`);
+    for (const f of o.fixes || []) L.push(`✏️ Сумма изменена: ${rub(f.from)} → <b>${rub(f.to)}</b>${f.reason ? ` (${esc(f.reason)})` : ''} — ${esc(f.by)}`);
+    if (o.final != null && o.final !== o.total) L.push(`🧾 Итог заказа: <b>${rub(o.final)}</b>`);
+    if (o.extra) L.push(`💰 <b>Доплата ${rub(o.extra)}</b> — свяжитесь с покупателем`);
+    const rl = refundLine(o); if (rl) L.push(rl);
     if (o.history.length) {
       L.push('');
       for (const h of o.history.slice(-8)) L.push(`<i>${hm(h.at)} · ${esc(h.text)}</i>`);
@@ -152,14 +208,18 @@ function createShop(opts) {
   }
   function keyboard(o) {
     const b = (text, a) => ({ text, callback_data: `${a}:${o.no}` });
+    let rows;
     switch (o.status) {
-      case 'new': case 'claimed': return [[b('✅ Оплата получена', 'paid')], [b('Отменить заказ', 'cancel')]];
-      case 'paid': return [[b('🔪 Взять в работу', 'work')]];
-      case 'work': return [[b('⚖️ Ввести сумму после взвешивания', 'weigh')], [b('Собран, вес как в заказе', 'packed')]];
-      case 'packed': return [[o.pickup ? b('🤝 Выдан покупателю', 'done') : b('🚚 Передан курьеру', 'road')]];
-      case 'road': return [[b('✅ Доставлен', 'done')]];
-      default: return [];
+      case 'new': case 'claimed': rows = [[b('✅ Оплата получена', 'paid')], [b('Отменить заказ', 'cancel')]]; break;
+      case 'paid': rows = [[b('🔪 Взять в работу', 'work')], [b('Отменить заказ', 'cancel')]]; break;
+      case 'work': rows = [[b('⚖️ Ввести сумму после взвешивания', 'weigh')], [b('📦 Собран, вес как в заказе', 'packed')]]; break;
+      case 'packed': rows = [[o.pickup ? b('🤝 Выдан покупателю', 'done') : b('🚚 Передан курьеру', 'road')]]; break;
+      case 'road': rows = [[b('✅ Доставлен', 'done')]]; break;
+      default: rows = [];
     }
+    if (!['done', 'cancel'].includes(o.status)) rows.push([b('✏️ Изменить сумму', 'fix')]);
+    if (o.refund && o.refund.status !== 'done') rows.push([b(`↩️ Возврат ${rub(o.refund.amount)} сделан`, 'refunded')]);
+    return rows;
   }
   async function renderStaff(o) {
     if (!staff()) return;
@@ -172,13 +232,41 @@ function createShop(opts) {
   function customerChat(o) {
     return o.customerChat || (o.user && db.users[o.user]?.chat) || null;
   }
+  function progress(o) {
+    if (['new', 'claimed', 'cancel'].includes(o.status)) return '';
+    const steps = o.pickup ? [['paid', 'Оплачен'], ['work', 'Режем'], ['packed', 'Собран'], ['done', 'Выдан']] : [['paid', 'Оплачен'], ['work', 'Режем'], ['packed', 'Собран'], ['road', 'В пути'], ['done', 'Доставлен']];
+    const at = steps.findIndex(s => s[0] === o.status);
+    return steps.map((s, i) => (i < at ? '✓ ' : i === at ? '● ' : '○ ') + s[1]).join('  ');
+  }
+  function customerButtons(o) {
+    if (o.status === 'packed' && o.pickup) return [[urlBtn('📍 Как добраться', C.mapUrl)]];
+    if (o.status === 'done') return [[urlBtn('🛒 Заказать снова', site('#catalog'))]];
+    if (o.status === 'cancel') return [[urlBtn('💬 Написать в WhatsApp', C.whatsapp)]];
+    return null;
+  }
   async function notifyCustomer(o, extra = '') {
     const chat = customerChat(o);
     if (!chat) return;
+    const pr = progress(o);
+    const kb = customerButtons(o);
     try {
-      await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML',
-        text: `<b>Заказ № ${o.no}</b>\n${CUSTOMER_TEXT[o.status]}${extra ? '\n' + extra : ''}` });
+      await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', disable_web_page_preview: true,
+        text: `<b>Заказ № ${o.no}</b> · ${STATUS_PUBLIC[o.status]}\n${CUSTOMER_TEXT[o.status]}${extra ? '\n' + extra : ''}${pr ? '\n\n' + pr : ''}`,
+        ...(kb ? { reply_markup: { inline_keyboard: kb } } : {}) });
     } catch (e) { log.error('customer', e.message); }
+    await askRefund(o);
+  }
+  // Спросить у покупателя, куда вернуть деньги
+  async function askRefund(o) {
+    const r = o.refund, chat = customerChat(o);
+    if (!r || r.status !== 'ask' || r.asked || !chat) return;
+    r.asked = true; save();
+    const b = (text, i) => ({ text, callback_data: `rb:${o.no}:${i}` });
+    const rows = [];
+    for (let i = 0; i < BANKS.length; i += 2) rows.push(BANKS.slice(i, i + 2).map((n, j) => b(n, i + j)));
+    rows.push([b('Другой банк', 'x')], [{ text: '💳 Вернуть на карту', callback_data: `rc:${o.no}` }]);
+    await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', reply_markup: { inline_keyboard: rows },
+      text: `↩️ <b>Возврат ${rub(r.amount)} по заказу № ${o.no}</b>\nКуда перевести деньги?\n\nПо СБП — на ваш номер <code>${esc(o.customer.tel)}</code>, выберите банк. Или на карту.` }).catch(e => log.error('askRefund', e.message));
   }
   function settleLoyalty(o) {
     const u = o.user && db.users[o.user];
@@ -188,7 +276,7 @@ function createShop(opts) {
       return `Списанные бонусы (${o.bonusUsed}) вернули на счёт.`;
     }
     if (o.status === 'done' && !o.cashback) {
-      const paidGoods = (o.fact != null ? o.fact : o.goods) - (o.bonusUsed || 0);
+      const paidGoods = o.final != null ? o.final - o.delivery : o.goods - (o.bonusUsed || 0);
       const lvl = levelOf(u.spent);
       o.cashback = Math.floor(Math.max(0, paidGoods) * lvl.rate);
       u.spent += Math.max(0, paidGoods);
@@ -199,36 +287,87 @@ function createShop(opts) {
     return '';
   }
   async function setStatus(o, status, by, text, extra) {
+    if (PAID_STATES.includes(status) && status !== 'claimed') o.wasPaid = true;
     o.status = status;
     o.history.push({ at: iso(), text: `${text}${by ? ' — ' + by : ''}` });
+    if (status === 'cancel') { const t = settleMoney(o, 'заказ отменён'); if (o.refund) extra = [extra, t].filter(Boolean).join('\n'); }
     const loyal = settleLoyalty(o);
     save();
     await renderStaff(o);
     await notifyCustomer(o, [extra, loyal].filter(Boolean).join('\n'));
   }
 
-  const NEXT = { paid: ['new', 'claimed'], cancel: ['new', 'claimed', 'paid', 'work', 'packed'], work: ['paid'], weigh: ['work'], packed: ['work'], road: ['packed'], done: ['packed', 'road'] };
+  const NEXT = { paid: ['new', 'claimed'], cancel: ['new', 'claimed', 'paid', 'work', 'packed'], work: ['paid'], weigh: ['work'], packed: ['work'], road: ['packed'], done: ['packed', 'road'],
+    fix: ['new', 'claimed', 'paid', 'work', 'packed', 'road'] };
   async function onCallback(q) {
-    const [action, no] = String(q.data || '').split(':');
+    const [action, no, arg] = String(q.data || '').split(':');
     const o = db.orders[no];
     const chat = String(q.message?.chat?.id || '');
-    if (!o || !staff() || chat !== staff()) return tg('answerCallbackQuery', { callback_query_id: q.id, text: 'Нет доступа' }).catch(() => {});
-    if (!NEXT[action] || !NEXT[action].includes(o.status))
-      return tg('answerCallbackQuery', { callback_query_id: q.id, text: `Статус уже: ${ST[o.status].t}` }).catch(() => {});
+    const answer = text => tg('answerCallbackQuery', { callback_query_id: q.id, ...(text ? { text } : {}) }).catch(() => {});
+
+    // ---- кнопки покупателя: куда вернуть деньги
+    if (action === 'rb' || action === 'rc') {
+      if (!o || !o.refund || chat !== String(customerChat(o))) return answer('Заказ не найден');
+      if (o.refund.status === 'done') return answer('Деньги уже вернули');
+      await answer();
+      if (action === 'rc') {
+        db.custWait[chat] = { no, kind: 'card', at: Date.now() }; save();
+        return tg('sendMessage', { chat_id: chat, text: 'Пришлите номер карты одним сообщением — только цифры, 16–19 знаков.\nПосле возврата номер удалим.',
+          reply_markup: { force_reply: true, input_field_placeholder: '2200 0000 0000 0000' } });
+      }
+      if (arg === 'x') {
+        db.custWait[chat] = { no, kind: 'bank', at: Date.now() }; save();
+        return tg('sendMessage', { chat_id: chat, text: 'Напишите название банка, привязанного к номеру ' + o.customer.tel, reply_markup: { force_reply: true, input_field_placeholder: 'Например, Газпромбанк' } });
+      }
+      const bank = BANKS[+arg];
+      if (!bank) return;
+      return refundChosen(o, chat, { method: 'sbp', bank });
+    }
+
+    if (!o || !staff() || chat !== staff()) return answer('Нет доступа');
+    if (action === 'refunded') {
+      if (!o.refund || o.refund.status === 'done') return answer('Возврат уже отмечен');
+      await answer();
+      const r = o.refund, by = who(q.from);
+      o.refunded = (o.refunded || 0) + r.amount;
+      if (r.card) { r.last4 = r.card.slice(-4); delete r.card; }
+      r.status = 'done'; r.doneAt = iso();
+      o.history.push({ at: iso(), text: `возврат ${rub(r.amount)} сделан — ${by}` });
+      save();
+      await renderStaff(o);
+      const chatC = customerChat(o);
+      if (chatC) await tg('sendMessage', { chat_id: chatC, parse_mode: 'HTML', text: `↩️ <b>Заказ № ${o.no}</b>\nВернули ${rub(r.amount)}${r.method === 'card' ? ` на карту •••• ${r.last4}` : r.bank ? ` по СБП в ${esc(r.bank)}` : ''}. Деньги обычно приходят в течение нескольких минут, иногда до суток.` }).catch(() => {});
+      return;
+    }
+    if (!NEXT[action] || !NEXT[action].includes(o.status)) return answer(`Статус уже: ${ST[o.status].t}`);
     const by = who(q.from);
-    await tg('answerCallbackQuery', { callback_query_id: q.id }).catch(() => {});
+    await answer();
     if (action === 'paid') return setStatus(o, 'paid', by, `оплата ${rub(o.total)} подтверждена`);
     if (action === 'cancel') return setStatus(o, 'cancel', by, 'заказ отменён');
     if (action === 'work') return setStatus(o, 'work', by, 'взял в работу');
     if (action === 'packed') return setStatus(o, 'packed', by, 'собран, вес как в заказе', o.pickup ? `Ждём вас: ${C.pickupAddr}.` : 'Скоро передадим курьеру.');
     if (action === 'road') return setStatus(o, 'road', by, 'передан курьеру');
     if (action === 'done') return setStatus(o, 'done', by, o.pickup ? 'выдан покупателю' : 'доставлен');
-    if (action === 'weigh') {
-      const m = await tg('sendMessage', { chat_id: staff(), text: `Заказ № ${o.no}: ответьте на это сообщение фактической суммой товаров в рублях (без доставки). Сейчас в заказе ${rub(o.goods)}.`,
-        reply_markup: { force_reply: true, selective: true, input_field_placeholder: 'Например, 5240' }, reply_to_message_id: o.staffMsgId });
-      db.pending[m.message_id] = { no: o.no, by };
+    if (action === 'weigh' || action === 'fix') {
+      const text = action === 'weigh'
+        ? `⚖️ Заказ № ${o.no}: ответьте на это сообщение фактической суммой товаров в рублях (без доставки). Сейчас в заказе ${rub(o.goods)}.`
+        : `✏️ Заказ № ${o.no}: ответьте на это сообщение новой суммой к оплате (вместе с доставкой). Можно добавить причину через пробел.\nСейчас: ${rub(o.final != null ? o.final : o.total)}.\n\nНапример: 4800 ошиблись в цене рибая`;
+      const m = await tg('sendMessage', { chat_id: staff(), text,
+        reply_markup: { force_reply: true, selective: true, input_field_placeholder: action === 'weigh' ? 'Например, 5240' : 'Например, 4800 ошиблись в цене' }, reply_to_message_id: o.staffMsgId });
+      db.pending[m.message_id] = { no: o.no, by, kind: action };
       save();
     }
+  }
+
+  async function refundChosen(o, chat, how) {
+    Object.assign(o.refund, how, { status: 'ready' });
+    o.history.push({ at: iso(), text: how.method === 'card' ? `покупатель указал карту •••• ${how.card.slice(-4)}` : `покупатель выбрал возврат по СБП, ${how.bank}` });
+    delete db.custWait[chat];
+    save();
+    await renderStaff(o);
+    if (staff()) await tg('sendMessage', { chat_id: staff(), text: `↩️ Заказ № ${o.no}: реквизиты для возврата ${rub(o.refund.amount)} получены.`, reply_to_message_id: o.staffMsgId }).catch(() => {});
+    return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', reply_markup: mainKb(chat),
+      text: how.method === 'card' ? `Спасибо! Вернём ${rub(o.refund.amount)} на карту •••• ${how.card.slice(-4)}. Сообщим, когда деньги уйдут.` : `Спасибо! Вернём ${rub(o.refund.amount)} по СБП на номер ${esc(o.customer.tel)} в ${esc(how.bank)}. Сообщим, когда деньги уйдут.` });
   }
 
   async function saveQr(m) {
@@ -244,7 +383,113 @@ function createShop(opts) {
     return tg('sendMessage', { chat_id: staff(), text: '✅ QR-код для оплаты сохранён. Покупатели увидят его при оформлении заказа.' });
   }
 
-  const removeKb = { remove_keyboard: true };
+  /* ---------- оформление бота и группы ---------- */
+  const BOT_UI = 'ui-2';
+  async function setupBot() {
+    if (!C.token || db.botUi === BOT_UI) return;
+    const P = { type: 'all_private_chats' };
+    const steps = [
+      ['setMyCommands', { scope: P, commands: [{ command: 'start', description: 'Главное меню' }, { command: 'orders', description: 'Мои заказы' }, { command: 'bonus', description: 'Бонусы' }, { command: 'contacts', description: 'Адрес и контакты' }] }],
+      ['setMyCommands', { scope: { type: 'all_group_chats' }, commands: [] }],
+      ['setMyShortDescription', { short_description: `Статусы заказов, коды для входа и бонусы лавки «${C.shop}». ${C.phone}` }],
+      ['setMyDescription', { description: `Бот лавки «${C.shop}».\n\nМраморная говядина, вагю и фермерское мясо с Кубани. Москва, ${C.pickupAddr}.\n\nЗдесь приходят статусы заказов и коды для входа на сайт, видны бонусы. Нажмите «Старт».` }],
+      ['setChatMenuButton', { menu_button: { type: 'commands' } }],
+    ];
+    for (const [m, b] of steps) await tg(m, b).catch(e => log.error('setupBot', e.message));
+    db.botUi = BOT_UI; save();
+  }
+  const STAFF_GUIDE = () => `📌 <b>Как работать с заказами</b>
+
+1. Заказ с сайта приходит сюда карточкой. 🟡 — ждёт оплаты, 🟠 — покупатель нажал «Я оплатил».
+2. Проверьте поступление в банке → <b>✅ Оплата получена</b>.
+3. <b>🔪 Взять в работу</b> → нарежьте, взвесьте.
+4. Вес другой → <b>⚖️ Ввести сумму после взвешивания</b> и ответьте числом. Бот сам посчитает возврат или доплату.
+5. <b>📦 Собран</b> → <b>🚚 Передан курьеру</b> → <b>✅ Доставлен</b> (или <b>🤝 Выдан</b> при самовывозе).
+
+✏️ <b>Изменить сумму</b> — если ошиблись в цене. Ответьте новой суммой к оплате и причиной: <code>4800 ошиблись в цене</code>.
+↩️ <b>Возврат</b>: бот спросит покупателя, куда вернуть — банк для СБП или карта. Реквизиты появятся в карточке. Переведите и нажмите <b>Возврат сделан</b> — номер карты сотрётся.
+
+Покупатель получает уведомление о каждом шаге.
+
+<b>Команды</b>
+/orders — открытые заказы
+/today — итоги дня (сами приходят в ${C.summaryAt})
+/client +79001234567 — карточка покупателя
+/qr — с картинкой: новый QR для оплаты
+/setup — обновить оформление группы`;
+  async function setupGroup(chat) {
+    const res = [];
+    const step = async (label, fn) => { try { await fn(); res.push('✅ ' + label); } catch (e) { res.push('⚠️ ' + label + (/rights|admin|not enough/i.test(e.message) ? ' — нужны права администратора' : ': ' + e.message.slice(0, 80))); } };
+    await step('Название', () => tg('setChatTitle', { chat_id: chat, title: `${C.shop.replace(' и стейки', '')} · Заказы` }));
+    await step('Описание', () => tg('setChatDescription', { chat_id: chat, description: `Рабочий чат лавки «${C.shop}». Заказы с сайта приходят сюда — кнопки под заказом меняют статус, покупатель получает уведомления. Шпаргалка — в закрепе.` }));
+    if (opts.assets?.groupPhoto) await step('Аватар', () => tgUpload('setChatPhoto', { chat_id: chat }, 'photo', opts.assets.groupPhoto, 'group.png', 'image/png'));
+    await step('Команды', () => tg('setMyCommands', { scope: { type: 'chat', chat_id: chat }, commands: [
+      { command: 'orders', description: 'Открытые заказы' }, { command: 'today', description: 'Итоги дня' }, { command: 'client', description: 'Карточка покупателя: /client +7…' },
+      { command: 'qr', description: 'С картинкой — новый QR для оплаты' }, { command: 'setup', description: 'Обновить оформление группы' }] }));
+    await step('Шпаргалка в закрепе', async () => {
+      const m = await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: STAFF_GUIDE() });
+      if (db.guideMsg && db.guideMsg !== m.message_id) await tg('unpinChatMessage', { chat_id: chat, message_id: db.guideMsg }).catch(() => {});
+      db.guideMsg = m.message_id; save();
+      await tg('pinChatMessage', { chat_id: chat, message_id: m.message_id, disable_notification: true });
+    });
+    const needAdmin = res.some(r => r.includes('администратора'));
+    return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: `<b>Оформление группы</b>\n${res.join('\n')}${needAdmin ? '\n\nСделайте бота администратором (права: изменение профиля группы, закрепление сообщений) и отправьте /setup ещё раз.' : ''}` });
+  }
+
+  /* ---------- клиентское меню ---------- */
+  const BTN = { order: '🛒 Заказать', orders: '📦 Мои заказы', bonus: '🎁 Бонусы', where: '📍 Адрес и часы', contact: '💬 Связаться', phone: '📱 Подключить номер' };
+  const linkedUser = chat => Object.values(db.users).find(u => u.chat === String(chat));
+  function mainKb(chat) {
+    const rows = [[{ text: BTN.order }, { text: BTN.orders }], [{ text: BTN.bonus }, { text: BTN.where }], [{ text: BTN.contact }]];
+    if (!linkedUser(chat)) rows.push([{ text: BTN.phone, request_contact: true }]);
+    return { keyboard: rows, resize_keyboard: true, is_persistent: true, input_field_placeholder: 'Выберите в меню' };
+  }
+  async function welcome(chat, m) {
+    const linked = linkedUser(chat);
+    const name = linked?.name || str(m.from?.first_name, 40);
+    const caption = `<b>${esc(C.shop)}</b>\n${name ? `Здравствуйте, ${esc(name)}! ` : ''}Мраморная говядина, вагю и фермерское мясо с Кубани. Режем стейк нужной толщины и привозим по Москве в холоде.\n\nЗдесь будут:\n• статусы ваших заказов\n• коды для входа на сайт\n• бонусы — до 7% с каждого заказа\n\n<a href="${site('#catalog')}">Открыть каталог →</a>` +
+      (linked ? '' : `\n\nНажмите «${BTN.phone}» внизу, чтобы видеть заказы и бонусы.`);
+    const body = { chat_id: chat, parse_mode: 'HTML', reply_markup: mainKb(chat) };
+    if (C.welcomePhoto) {
+      try {
+        const r = await tg('sendPhoto', { ...body, photo: db.welcomePhotoId || C.welcomePhoto, caption });
+        const id = r?.photo?.at?.(-1)?.file_id;
+        if (id && id !== db.welcomePhotoId) { db.welcomePhotoId = id; save(); }
+        return r;
+      } catch (e) { log.error('welcome photo', e.message); db.welcomePhotoId = ''; }
+    }
+    return tg('sendMessage', { ...body, text: caption, disable_web_page_preview: true });
+  }
+  function ordersOf(chat) {
+    const u = linkedUser(chat);
+    return Object.values(db.orders).filter(o => String(o.customerChat) === String(chat) || (u && o.user === u.phone))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  async function customerMenu(chat, text, m) {
+    const send = (t, extra = {}) => tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', disable_web_page_preview: true, text: t, ...extra });
+    const inline = rows => ({ reply_markup: { inline_keyboard: rows } });
+    const u = linkedUser(chat);
+    if (text === BTN.order) return send(`🛒 <b>Каталог и заказ — на сайте</b>\n\nДоставка по Москве ${rub(C.deliveryFee)}, бесплатно от ${rub(C.freeFrom)}. Самовывоз: ${esc(C.pickupAddr)}.\nОплата по QR-коду СБП, статус заказа придёт сюда.`,
+      inline([[urlBtn('🛒 Открыть каталог', site('#catalog'))], [urlBtn('🥩 Стейки', site('#steaks')), urlBtn('🐄 Мясо', site('#meat'))], [urlBtn('🧀 Сыры', site('#cheese')), urlBtn('🐟 Рыба и икра', site('#fish'))]]));
+    if (text === BTN.orders || /^\/orders/.test(text)) {
+      const list = ordersOf(chat).slice(0, 5);
+      if (!list.length) return send(u ? 'Заказов пока нет. Самое время выбрать стейк 🙂' : `Заказов пока нет.\n\nЕсли заказывали на сайте — нажмите «${BTN.phone}» внизу, и мы покажем заказы по вашему номеру.`, inline([[urlBtn('🛒 Открыть каталог', site('#catalog'))]]));
+      const lines = list.map(o => `${ST[o.status].e} <b>№ ${o.no}</b> · ${day(o.createdAt).slice(0, 5)} · ${rub(o.final != null ? o.final : o.total)}\n${STATUS_PUBLIC[o.status]}${o.refund && o.refund.status !== 'done' ? ` · ↩️ возврат ${rub(o.refund.amount)}` : ''}`);
+      return send(`📦 <b>Ваши заказы</b>\n\n${lines.join('\n\n')}`, inline([[urlBtn('👤 Все заказы в личном кабинете', site('#account'))]]));
+    }
+    if (text === BTN.bonus || /^\/bonus/.test(text)) {
+      if (!u) return send(`🎁 <b>Бонусы</b>\n\n300 бонусов за регистрацию, кешбэк 3–7% с каждого заказа и 1 000 в день рождения. Бонусами можно оплатить до ${Math.round(C.maxBonusShare * 100)}% заказа.\n\nНажмите «${BTN.phone}» внизу, чтобы подключить бонусы.`, { reply_markup: mainKb(chat) });
+      const L = levelOf(u.spent);
+      return send(`🎁 <b>На счёте ${u.bonus} бонусов</b>\n\nУровень <b>${esc(L.name)}</b> — кешбэк ${Math.round(L.rate * 100)}%.${L.next ? `\nДо уровня ${esc(L.next.name)} (${Math.round(L.next.rate * 100)}%): покупки ещё на ${rub(L.next.need)}.` : ''}\n\n1 бонус = 1 ₽. Можно оплатить до ${Math.round(C.maxBonusShare * 100)}% заказа.${u.birthday ? '' : '\nУкажите день рождения в кабинете — подарим 1 000 бонусов.'}`,
+        inline([[urlBtn('👤 Личный кабинет', site('#account'))]]));
+    }
+    if (text === BTN.where || /^\/contacts/.test(text)) return send(`📍 <b>${esc(C.shop)}</b>\nМосква, ${esc(C.pickupAddr)}\n🕑 ${esc(C.hours)}\n\n📞 ${esc(C.phone)}`,
+      inline([[urlBtn('🗺 Маршрут в Яндекс Картах', C.mapUrl)], [urlBtn('💬 WhatsApp', C.whatsapp), urlBtn('ВКонтакте', C.vk)]]));
+    if (text === BTN.contact) return send(`💬 <b>Связаться с лавкой</b>\n\n📞 ${esc(C.phone)} — позвоните, подскажем с выбором и толщиной стейка.\nИли напишите в WhatsApp — ответим в рабочее время (${esc(C.hours)}).`,
+      inline([[urlBtn('💬 Написать в WhatsApp', C.whatsapp)], [urlBtn('ВКонтакте', C.vk)]]));
+    return null;
+  }
+
   async function onMessage(m) {
     const chat = String(m.chat.id);
     const text = (m.text || m.caption || '').trim();
@@ -254,43 +499,80 @@ function createShop(opts) {
     if (/^\/staff(@\w+)?$/.test(text) && m.chat.type !== 'private') {
       if (staff() && staff() !== chat) return tg('sendMessage', { chat_id: chat, text: 'Рабочий чат уже назначен.' });
       if (!staff()) { db.staffChat = chat; save(); }
-      return tg('sendMessage', { chat_id: chat, text: 'Готово: это рабочий чат лавки. Сюда будут приходить заказы.\n\nДальше: отправьте сюда картинку QR-кода для оплаты с подписью /qr\n\nКоманды: /orders /today /client /help' });
+      await tg('sendMessage', { chat_id: chat, text: 'Готово: это рабочий чат лавки. Сюда будут приходить заказы.\n\nДальше: отправьте сюда картинку QR-кода для оплаты с подписью /qr' });
+      return setupGroup(chat);
     }
 
-    // weight reply in staff chat
+    // ответ сотрудника: вес или новая сумма
     const p = m.reply_to_message && db.pending[m.reply_to_message.message_id];
     if (p && chat === staff()) {
       const o = db.orders[p.no];
-      const v = parseInt(text.replace(/[^\d]/g, ''), 10);
-      if (!o || o.status !== 'work') return;
+      const v = parseInt((text.match(/\d[\d\s]*/) || [''])[0].replace(/\s/g, ''), 10);
+      if (!o) return;
       if (!v || v < 1) return tg('sendMessage', { chat_id: chat, text: 'Нужна сумма числом, например 5240', reply_to_message_id: m.message_id });
+      const by = who(m.from);
+      if (p.kind === 'fix') {
+        if (['done', 'cancel'].includes(o.status)) return;
+        delete db.pending[m.reply_to_message.message_id];
+        const reason = str(text.replace(/^[^\d]*\d[\d\s]*/, '').replace(/^[\s,.—–-]+/, ''), 120);
+        const from = o.final != null ? o.final : o.total;
+        (o.fixes = o.fixes || []).push({ at: iso(), from, to: v, reason, by });
+        let extra;
+        if (o.status === 'new') { o.total = v; o.final = null; extra = `Сумма к оплате изменена: ${rub(from)} → ${rub(v)}${reason ? ` (${reason})` : ''}. Оплатите новую сумму по QR-коду.`; }
+        else { o.final = v; extra = `Сумма заказа изменена: ${rub(from)} → ${rub(v)}${reason ? ` (${reason})` : ''}. ` + settleMoney(o, reason || 'изменение суммы'); }
+        o.history.push({ at: iso(), text: `сумма ${rub(from)} → ${rub(v)} — ${by}` });
+        save();
+        await renderStaff(o);
+        const cc = customerChat(o);
+        if (cc) await tg('sendMessage', { chat_id: cc, parse_mode: 'HTML', text: `✏️ <b>Заказ № ${o.no}</b>\n${esc(extra)}\nИзвините за неудобство!` }).catch(() => {});
+        return askRefund(o);
+      }
+      if (o.status !== 'work') return;
       delete db.pending[m.reply_to_message.message_id];
       o.fact = v;
+      o.final = v + o.delivery - (o.bonusUsed || 0);
       const d = o.goods - v;
-      const extra = `Фактическая сумма после взвешивания: ${rub(v)}. ` + (d > 0 ? `Разницу ${rub(d)} вернём на карту, с которой была оплата.` : d < 0 ? `Доплата ${rub(-d)}, менеджер свяжется с вами.` : 'Вес совпал с заказом.');
-      return setStatus(o, 'packed', who(m.from), `взвешено ${rub(v)}`, extra);
+      const money = settleMoney(o, 'вес меньше заказанного');
+      const extra = `Фактическая сумма после взвешивания: ${rub(v)}. ` + (d === 0 ? 'Вес совпал с заказом.' : money);
+      return setStatus(o, 'packed', by, `взвешено ${rub(v)}`, extra);
     }
 
     if (staff() && chat === staff()) {
       if (/^\/qr(@\w+)?\b/.test(text)) return saveQr(m);
+      if (/^\/setup/.test(text)) return setupGroup(chat);
       if (/^\/today/.test(text)) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: summary(day(now())) });
-      if (/^\/orders/.test(text)) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: openOrders() });
+      if (/^\/orders/.test(text)) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', disable_web_page_preview: true, text: openOrders() });
       const cm = text.match(/^\/client(?:@\w+)?\s+(.+)/);
       if (cm) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: clientCard(cm[1]) });
-      if (/^\/help|^\/start/.test(text)) return tg('sendMessage', { chat_id: chat, text: 'Команды:\n/orders — открытые заказы\n/today — итоги дня\n/client +79001234567 — бонусы и заказы покупателя\n/qr — с картинкой: сменить QR-код для оплаты\n/id — ID чата' });
+      if (/^\/help|^\/start/.test(text)) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: STAFF_GUIDE() });
       return;
     }
     if (m.chat.type !== 'private') return;
+
+    // ввод покупателя: карта или банк для возврата
+    const w = db.custWait[chat];
+    if (w && !m.contact && !Object.values(BTN).includes(text) && !text.startsWith('/')) {
+      const o = db.orders[w.no];
+      if (!o || !o.refund || o.refund.status === 'done' || Date.now() - w.at > 3 * 864e5) { delete db.custWait[chat]; save(); }
+      else if (w.kind === 'card') {
+        const d = text.replace(/[\s-]/g, '');
+        await tg('deleteMessage', { chat_id: chat, message_id: m.message_id }).catch(() => {});
+        if (!/^\d{16,19}$/.test(d) || !luhn(d)) return tg('sendMessage', { chat_id: chat, text: 'Похоже, в номере ошибка. Пришлите 16–19 цифр карты ещё раз.', reply_markup: { force_reply: true, input_field_placeholder: '2200 0000 0000 0000' } });
+        return refundChosen(o, chat, { method: 'card', card: d, bank: null });
+      } else {
+        return refundChosen(o, chat, { method: 'sbp', bank: str(text, 40) });
+      }
+    }
 
     // shared contact: confirms the phone number belongs to this Telegram user
     if (m.contact) {
       if (String(m.contact.user_id) !== String(m.from?.id))
         return tg('sendMessage', { chat_id: chat, text: 'Отправьте, пожалуйста, свой номер кнопкой «Поделиться номером».' });
       const phone = normPhone(m.contact.phone_number);
-      if (!phone) return tg('sendMessage', { chat_id: chat, text: 'Не удалось распознать номер.', reply_markup: removeKb });
+      if (!phone) return tg('sendMessage', { chat_id: chat, text: 'Не удалось распознать номер.', reply_markup: mainKb(chat) });
       const entry = Object.entries(db.logins).filter(([, l]) => l.chat === chat && !l.confirmed && l.exp > Date.now()).sort((a, b) => b[1].exp - a[1].exp)[0];
       if (entry && entry[1].phone && entry[1].phone !== phone)
-        return tg('sendMessage', { chat_id: chat, text: `Номер в Telegram (${maskPhone(phone)}) не совпадает с номером, который вы ввели на сайте. Проверьте номер и попробуйте снова.`, reply_markup: removeKb });
+        return tg('sendMessage', { chat_id: chat, text: `Номер в Telegram (${maskPhone(phone)}) не совпадает с номером, который вы ввели на сайте. Проверьте номер и попробуйте снова.`, reply_markup: mainKb(chat) });
       for (const u of Object.values(db.users)) if (u.chat === chat && u.phone !== phone) u.chat = null;
       const u = getUser(phone, true);
       u.chat = chat;
@@ -298,9 +580,9 @@ function createShop(opts) {
       if (!u.name) u.name = str(m.from?.first_name, 60);
       if (entry) entry[1].confirmed = phone;
       save();
-      return tg('sendMessage', { chat_id: chat, reply_markup: removeKb, text: entry
-        ? 'Номер подтверждён, вход выполнен. Вернитесь на сайт.\nДальше коды для входа будут приходить сюда.'
-        : 'Номер подтверждён. Коды для входа на сайт и статусы заказов будут приходить сюда.' });
+      return tg('sendMessage', { chat_id: chat, reply_markup: mainKb(chat), parse_mode: 'HTML', text: entry
+        ? '✅ Номер подтверждён, вход выполнен. Вернитесь на сайт.\nДальше коды для входа будут приходить сюда.'
+        : `✅ Номер подтверждён. Коды для входа на сайт и статусы заказов будут приходить сюда.\n\n🎁 На счёте ${u.bonus} бонусов.` });
     }
 
     const lg = text.match(/^\/start\s+login_([a-f0-9]{16,64})/);
@@ -316,28 +598,38 @@ function createShop(opts) {
       const o = db.orders[mm[1]];
       if (!o || o.token !== mm[2]) return tg('sendMessage', { chat_id: chat, text: 'Заказ не найден. Позвоните нам: ' + C.phone });
       o.customerChat = chat; save();
-      return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: `Здравствуйте, ${esc(o.customer.name)}!\nБудем присылать сюда статус <b>заказа № ${o.no}</b>.\n\nСейчас: ${CUSTOMER_TEXT[o.status]}` });
+      return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', reply_markup: mainKb(chat), text: `Здравствуйте, ${esc(o.customer.name)}!\nБудем присылать сюда статус <b>заказа № ${o.no}</b>.\n\nСейчас: ${CUSTOMER_TEXT[o.status]}` });
     }
-    const linked = Object.values(db.users).find(u => u.chat === chat);
-    if (/^\/bonus/.test(text) && linked) {
-      const L = levelOf(linked.spent);
-      return tg('sendMessage', { chat_id: chat, text: `На счёте ${linked.bonus} бонусов. Уровень ${L.name}, кешбэк ${Math.round(L.rate * 100)}%.` });
-    }
-    return tg('sendMessage', { chat_id: chat, text: `Это бот лавки «${C.shop}». Заказ можно оформить на сайте, вопросы — по телефону ${C.phone}.${linked ? '\n/bonus — баланс бонусов' : ''}` });
+    if (/^\/start/.test(text)) return welcome(chat, m);
+    const menu = await customerMenu(chat, text, m);
+    if (menu !== null) return menu;
+    return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', reply_markup: mainKb(chat),
+      text: `Я бот лавки и пока не умею отвечать на сообщения 🙂\nВыберите в меню внизу или позвоните: ${esc(C.phone)}.` });
   }
 
   function summary(d) {
     const list = Object.values(db.orders).filter(o => day(o.createdAt) === d);
     const by = {}; list.forEach(o => (by[o.status] = (by[o.status] || 0) + 1));
     const paid = list.filter(o => ['paid', 'work', 'packed', 'road', 'done'].includes(o.status));
-    const sum = paid.reduce((s, o) => s + (o.fact != null ? o.fact + o.delivery - (o.bonusUsed || 0) : o.total), 0);
-    return [`<b>Итоги ${d}</b>`, `Заказов: ${list.length}, оплачено: ${paid.length}`, `Выручка: ${rub(sum)}`, '',
-      ...Object.entries(by).map(([k, v]) => `${ST[k].e} ${ST[k].t}: ${v}`)].join('\n');
+    const sum = paid.reduce((s, o) => s + (o.final != null ? o.final : o.total), 0);
+    const avg = paid.length ? sum / paid.length : 0;
+    const refunds = Object.values(db.orders).filter(o => o.refund && o.refund.status !== 'done');
+    return [`📊 <b>Итоги ${d}</b>`, '', `Заказов: <b>${list.length}</b>, оплачено: <b>${paid.length}</b>`, `Выручка: <b>${rub(sum)}</b>${paid.length ? ` · средний чек ${rub(avg)}` : ''}`, '',
+      ...Object.entries(by).map(([k, v]) => `${ST[k].e} ${ST[k].t}: ${v}`),
+      ...(refunds.length ? ['', `↩️ Ждут возврата: ${refunds.length} на ${rub(refunds.reduce((s, o) => s + o.refund.amount, 0))}`] : [])].join('\n');
+  }
+  function cardLink(o) {
+    const c = staff();
+    return o.staffMsgId && /^-100\d+$/.test(c) ? `https://t.me/c/${c.slice(4)}/${o.staffMsgId}` : null;
   }
   function openOrders() {
-    const list = Object.values(db.orders).filter(o => !['done', 'cancel'].includes(o.status));
-    if (!list.length) return 'Открытых заказов нет.';
-    return '<b>Открытые заказы</b>\n' + list.map(o => `${ST[o.status].e} № ${o.no} · ${esc(o.customer.name)} · ${rub(o.total)} · ${esc(o.date)} ${esc(o.time)}`).join('\n');
+    const list = Object.values(db.orders).filter(o => !['done', 'cancel'].includes(o.status) || (o.refund && o.refund.status !== 'done'))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    if (!list.length) return 'Открытых заказов нет. 🎉';
+    return '<b>Открытые заказы</b>\n\n' + list.map(o => {
+      const l = cardLink(o), no = l ? `<a href="${l}">№ ${o.no}</a>` : `№ ${o.no}`;
+      return `${ST[o.status].e} ${no} · ${esc(o.customer.name)} · ${rub(o.final != null ? o.final : o.total)}\n      ${esc(o.date)} ${esc(o.time)}${o.refund && o.refund.status !== 'done' ? ` · ↩️ вернуть ${rub(o.refund.amount)}` : ''}${o.extra ? ` · 💰 доплата ${rub(o.extra)}` : ''}`;
+    }).join('\n');
   }
   function clientCard(q) {
     const phone = normPhone(q);
@@ -345,8 +637,8 @@ function createShop(opts) {
     if (!u) return 'Покупатель не найден.';
     const L = levelOf(u.spent);
     const orders = Object.values(db.orders).filter(o => o.user === phone);
-    return [`<b>${esc(u.name || 'Без имени')}</b>, ${phone}`, `Уровень: ${L.name} (${Math.round(L.rate * 100)}%)`, `Бонусы: ${u.bonus}`,
-      `Покупок на ${rub(u.spent)}, заказов: ${orders.length}`, u.birthday ? `День рождения: ${u.birthday}` : ''].filter(Boolean).join('\n');
+    return [`👤 <b>${esc(u.name || 'Без имени')}</b>, <code>${phone}</code>`, `Уровень: ${L.name} (${Math.round(L.rate * 100)}%)`, `Бонусы: ${u.bonus}`,
+      `Покупок на ${rub(u.spent)}, заказов: ${orders.length}`, u.birthday ? `День рождения: ${u.birthday}` : '', u.chat ? 'Telegram подключён' : 'Telegram не подключён'].filter(Boolean).join('\n');
   }
 
   /** Одно обновление от Telegram (из getUpdates или вебхука). Повторы отбрасываются. */
@@ -378,11 +670,12 @@ function createShop(opts) {
         if (bd === dd && bm === mm && u.birthdayYear !== yy) {
           u.birthdayYear = yy;
           bonus(u, C.birthdayBonus, 'Подарок на день рождения');
-          if (u.chat) await tg('sendMessage', { chat_id: u.chat, text: `С днём рождения! Дарим ${C.birthdayBonus} бонусов на стейк к праздничному столу.` }).catch(() => {});
+          if (u.chat) await tg('sendMessage', { chat_id: u.chat, text: `🎂 С днём рождения! Дарим ${C.birthdayBonus} бонусов на стейк к праздничному столу.` }).catch(() => {});
         }
       }
       for (const [k, l] of Object.entries(db.logins)) if (l.exp < Date.now() - 3600e3) delete db.logins[k];
       for (const [k, s] of Object.entries(db.sessions)) if (Date.now() - new Date(s.seen).getTime() > 90 * 864e5) delete db.sessions[k];
+      for (const [k, w] of Object.entries(db.custWait)) if (Date.now() - w.at > 3 * 864e5) delete db.custWait[k];
       save();
     }
   }
@@ -477,7 +770,6 @@ function createShop(opts) {
   }
 
   /* ---------- account API ---------- */
-  const STATUS_PUBLIC = { new: 'Ждёт оплаты', claimed: 'Проверяем оплату', paid: 'Оплачен', work: 'В работе', packed: 'Собран', road: 'В пути', done: 'Выполнен', cancel: 'Отменён' };
   function me(sess) {
     const u = sess.user, L = levelOf(u.spent);
     const orders = Object.values(db.orders).filter(o => o.user === u.phone).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30);
@@ -631,7 +923,7 @@ function createShop(opts) {
     }
   }
 
-  return { handle, onUpdate, daily, init, tg, sha, get me() { return ME; }, staff };
+  return { handle, onUpdate, daily, init, setupBot, tg, sha, get me() { return ME; }, staff };
 }
 
 module.exports = { createShop, configFromEnv, emptyDb };

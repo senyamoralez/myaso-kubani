@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import core from '../../bot/core.js';
 import catalog from '../../tools/catalog.json';
+import groupPhoto from '../../bot/assets/group.png';
 
 const { createShop, configFromEnv, emptyDb } = core;
 const COLL = ['orders', 'users', 'sessions', 'logins', 'pending'];
@@ -30,7 +31,7 @@ export class Shop extends DurableObject {
     this.snap = snap;
     this.dirty = false;
     this.C = configFromEnv(this.env);
-    this.shop = createShop({ C: this.C, db, catalog, crypto, Buffer, save: () => { this.dirty = true; } });
+    this.shop = createShop({ C: this.C, db, catalog, crypto, Buffer, assets: { groupPhoto: new Uint8Array(groupPhoto) }, save: () => { this.dirty = true; } });
   }
 
   // База лежит по ключам: orders/1001, users/+7…, meta, qr. Пишем только изменившиеся ключи.
@@ -62,6 +63,7 @@ export class Shop extends DurableObject {
     if (!this.shop.me) await this.shop.init();
     const url = `${selfUrl}/tg/${this.hookPath()}`;
     const mark = url + '#' + this.shop.sha(this.C.token).slice(0, 8);
+    if (this.shop.me) await this.shop.setupBot();
     if (this.db.webhookUrl === mark) return;
     try {
       await this.shop.tg('setWebhook', { url, secret_token: this.hookToken(), allowed_updates: ['message', 'callback_query'], max_connections: 5 });

@@ -47,7 +47,9 @@ function save() {
 
 let catalog = [];
 try { catalog = JSON.parse(fs.readFileSync(catalogFile, 'utf8')); } catch (e) { console.error('Не удалось прочитать каталог', catalogFile, e.message); }
+const groupPhoto = path.join(__dirname, 'assets', 'group.png');
 const shop = createShop({ C, db, save, catalog, crypto, Buffer,
+  assets: { groupPhoto: fs.existsSync(groupPhoto) ? fs.readFileSync(groupPhoto) : null },
   readQrFile: () => fs.existsSync(qrFile) ? { bytes: fs.readFileSync(qrFile), type: qrFile.endsWith('.svg') ? 'image/svg+xml' : qrFile.endsWith('.jpg') ? 'image/jpeg' : 'image/png' } : null });
 console.log('Каталог:', (catalog.items || catalog).length, 'позиций');
 if (!shop.staff()) console.warn('Рабочий чат не задан: добавьте бота в группу сотрудников и отправьте там /staff');
@@ -81,6 +83,7 @@ async function poll() {
 (async () => {
   const me = await shop.init();
   if (me) console.log('Бот:', '@' + me.username);
+  if (me) await shop.setupBot();
   await shop.tg('deleteWebhook').catch(() => {});
   setInterval(() => shop.daily().catch(e => console.error('daily', e.message)), 30000);
   server.listen(port, () => console.log('API слушает порт', port));
