@@ -22,15 +22,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with: { node-version: 22 }
       - name: Установка
         working-directory: worker
         run: npm ci
       - name: Проверки (Node и среда Cloudflare)
         working-directory: worker
         run: |
-          (cd ../bot && npm test)
-          npm test
+          fail() { echo "::error title=$1::$(tail -n 60 "$2" | sed -e ':a;N;$!ba' -e 's/%/%25/g;s/\r//g;s/\n/%0A/g')"; exit 1; }
+          (cd ../bot && npm test) > node.log 2>&1 || fail "Тесты Node" node.log
+          npm test > worker.log 2>&1 || fail "Тесты Worker" worker.log
+          tail -n 5 node.log worker.log
       - name: Деплой
         if: env.CLOUDFLARE_API_TOKEN != ''
         working-directory: worker
