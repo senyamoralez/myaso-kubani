@@ -101,6 +101,17 @@ function createShop(opts) {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
     });
     const j = await r.json().catch(() => ({ ok: false, description: 'bad json' }));
+    // группа стала супергруппой — у неё новый ID: запоминаем и повторяем
+    const mig = j.parameters?.migrate_to_chat_id;
+    if (!j.ok && mig && body.chat_id != null && String(body.chat_id) === staff()) {
+      db.staffChat = String(mig); C.staffChat = ''; save();
+      const nb = { ...body, chat_id: db.staffChat };
+      if (nb.reply_to_message_id) { delete nb.reply_to_message_id; }
+      return tg(method, nb);
+    }
+    if (!j.ok && /message to be replied not found/i.test(j.description || '') && body.reply_to_message_id) {
+      const nb = { ...body }; delete nb.reply_to_message_id; return tg(method, nb);
+    }
     if (!j.ok) throw new Error(`${method}: ${j.description || r.status}`);
     return j.result;
   }
@@ -225,8 +236,11 @@ function createShop(opts) {
     if (!staff()) return;
     const body = { chat_id: staff(), text: orderText(o), parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard(o) } };
     try {
-      if (o.staffMsgId) await tg('editMessageText', { ...body, message_id: o.staffMsgId });
-      else { const m = await tg('sendMessage', body); o.staffMsgId = m.message_id; save(); }
+      if (o.staffMsgId && o.staffChat === staff()) {
+        try { await tg('editMessageText', { ...body, message_id: o.staffMsgId }); return; }
+        catch (e) { if (/not modified/.test(e.message)) return; log.error('staff edit', e.message); }
+      }
+      const m = await tg('sendMessage', { ...body, chat_id: staff() }); o.staffMsgId = m.message_id; o.staffChat = staff(); save();
     } catch (e) { if (!/not modified/.test(e.message)) log.error('staff', e.message); }
   }
   function customerChat(o) {
@@ -492,6 +506,7 @@ function createShop(opts) {
 
   async function onMessage(m) {
     const chat = String(m.chat.id);
+    if (m.migrate_to_chat_id && chat === staff()) { db.staffChat = String(m.migrate_to_chat_id); C.staffChat = ''; save(); return; }
     const text = (m.text || m.caption || '').trim();
     if (/^\/id(@\w+)?$/.test(text)) return tg('sendMessage', { chat_id: chat, text: `ID этого чата: ${chat}` });
 
