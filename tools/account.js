@@ -132,7 +132,7 @@ function loginView(){
   const s=login;
   const perks=`<ul class="perks big"><li><b>300 бонусов</b> сразу после регистрации</li><li><b>Кешбэк 3–7%</b> с каждого заказа бонусами</li><li><b>1 000 бонусов</b> в день рождения</li><li><b>История заказов</b> и повтор в один клик</li></ul>`;
   let form;
-  if(s.step==='phone')form=`<form class="lform" id="lPhone"><div class="fld"><label for="l-phone">Номер телефона</label><input id="l-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 900 000-00-00" value="${escA(s.phone||'')}"></div><p class="err" id="lErr" hidden></p><button class="btn btn-fill" type="submit">Получить код <span class="ar">→</span></button><p class="hint">Код придёт в Telegram от бота лавки. Пароль не нужен.</p></form>`;
+  if(s.step==='phone')form=`<form class="lform" id="lPhone"><div class="fld"><label for="l-phone">Номер телефона</label><input id="l-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 900 000-00-00" value="${escA(s.phone||'')}"></div>${AGREE('l-agree')}<p class="err" id="lErr" hidden></p><button class="btn btn-fill" type="submit">Получить код <span class="ar">→</span></button><p class="hint">Код придёт в Telegram от бота лавки. Пароль не нужен.</p></form>`;
   else if(s.step==='code')form=`<form class="lform" id="lCode"><p class="lstep">${escA(s.hint)}</p><div class="fld"><label for="l-code">Код из 6 цифр</label><input id="l-code" class="code-in num" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"></div><p class="err" id="lErr" hidden></p><button class="btn btn-fill" type="submit">Войти</button><button class="btn btn-line" type="button" id="lBack">Изменить номер</button></form>`;
   else form=`<div class="lform"><p class="lstep">${escA(s.hint)}</p><a class="btn btn-fill" href="${escA(s.link)}" target="_blank" rel="noopener">Открыть Telegram <span class="ar">→</span></a><p class="wait"><i></i>Ждём подтверждения номера в Telegram…</p><p class="err" id="lErr" hidden></p><button class="btn btn-line" type="button" id="lBack">Изменить номер</button></div>`;
   return `<div class="acc wrap"><div class="login">
@@ -142,8 +142,8 @@ function loginView(){
 }
 function bindLogin(){
   const err=m=>{const e=$('#lErr');if(e){e.textContent=m;e.hidden=false}};
-  const f1=$('#lPhone');if(f1){$('#l-phone').focus();f1.onsubmit=async e=>{e.preventDefault();const btn=f1.querySelector('[type=submit]');btn.disabled=true;
-    try{const r=await api('/api/auth/start',{phone:$('#l-phone').value});login={step:r.method==='telegram_link'?'link':'code',nonce:r.nonce,hint:r.hint,link:r.link,phone:$('#l-phone').value};renderAccount();if(login.step==='link')startPoll()}
+  const f1=$('#lPhone');if(f1){$('#l-phone').focus();f1.onsubmit=async e=>{e.preventDefault();if(!$('#l-agree').checked){err('Отметьте согласие на обработку персональных данных.');return}const btn=f1.querySelector('[type=submit]');btn.disabled=true;
+    try{const r=await api('/api/auth/start',{consent:true,phone:$('#l-phone').value});login={step:r.method==='telegram_link'?'link':'code',nonce:r.nonce,hint:r.hint,link:r.link,phone:$('#l-phone').value};renderAccount();if(login.step==='link')startPoll()}
     catch(x){err(x.message);btn.disabled=false}}}
   const f2=$('#lCode');if(f2){$('#l-code').focus();f2.onsubmit=async e=>{e.preventDefault();const btn=f2.querySelector('[type=submit]');btn.disabled=true;
     try{await api('/api/auth/verify',{nonce:login.nonce,code:$('#l-code').value});await afterLogin()}catch(x){err(x.message);btn.disabled=false}}}

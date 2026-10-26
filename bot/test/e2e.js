@@ -49,10 +49,11 @@ let staffMsg;
 
     // 1. bad orders rejected
     let r = await api('/api/orders', { name: '', tel: '1', items: [] }); assert.equal(r.code, 400);
-    r = await api('/api/orders', { name: 'Анна', tel: '+79165551240', addr: 'ул. Тест, 1', items: [{ id: 'nope', q: 1 }] }); assert.equal(r.code, 400);
+    r = await api('/api/orders', { name: 'Анна', tel: '+79165551240', addr: 'ул. Тест, 1', items: [{ id: 'ribeye-steaks', q: 1 }] }); assert.equal(r.code, 400); assert.match(r.j.error, /согласие/);
+    r = await api('/api/orders', { consent: true, name: 'Анна', tel: '+79165551240', addr: 'ул. Тест, 1', items: [{ id: 'nope', q: 1 }] }); assert.equal(r.code, 400);
 
     // 2. real order, client-side prices are ignored (server recalculates)
-    r = await api('/api/orders', { name: 'Анна <b>', tel: '+7 916 555-12-40', addr: 'ул. Таллинская, 20', date: 'Сегодня', time: '14:00–16:00', note: 'толщина 3 см',
+    r = await api('/api/orders', { consent: true, name: 'Анна <b>', tel: '+7 916 555-12-40', addr: 'ул. Таллинская, 20', date: 'Сегодня', time: '14:00–16:00', note: 'толщина 3 см',
       items: [{ id: 'ribeye-steaks', q: 2, price: 1 }, { id: 'a5', q: 0.2 }] });
     assert.equal(r.code, 201, JSON.stringify(r.j));
     const o = r.j; console.log('order', o.no, o.total, o.botLink);

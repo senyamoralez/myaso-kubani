@@ -616,6 +616,46 @@ form.order{display:grid;gap:14px;margin-top:6px}
 .cta::before{content:"";position:absolute;inset:0 0 auto;height:var(--fade);z-index:-1;pointer-events:none;background:linear-gradient(180deg,var(--ink),rgba(14,11,10,0))}
 .cta::after{content:"";position:absolute;inset:auto 0 0;height:calc(var(--fade)*.6);z-index:-1;pointer-events:none;background:linear-gradient(0deg,var(--ink),rgba(14,11,10,0))}
 .ftr{border-top:0}
+
+/* ============ legal: privacy & consent ============ */
+.legal{padding-top:calc(118px + env(safe-area-inset-top,0px));padding-bottom:clamp(60px,8vw,110px)}
+.legal .wrap{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:clamp(32px,6vw,96px);align-items:start}
+@media (max-width:960px){.legal .wrap{grid-template-columns:1fr}}
+.lg-side{display:flex;flex-direction:column;gap:20px;align-self:stretch;min-width:0}
+.lg-side .lg-sticky{position:sticky;top:100px;display:grid;gap:18px}
+@media (max-width:960px){.lg-side .lg-sticky{position:static}}
+.lg-side h1{font-size:clamp(2.4rem,4.4vw,4.2rem);line-height:.92;letter-spacing:-.035em;font-weight:300;padding-bottom:.08em;overflow-wrap:anywhere;hyphens:auto}
+.lg-side h1 em{color:var(--brass-2)}
+.lg-side .lead{color:var(--tallow-2);max-width:42ch}
+.lg-upd{color:var(--tallow-3);font-size:12px}
+.lg-toc{display:grid;border-top:1px solid var(--line)}
+.lg-toc a{display:flex;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);color:var(--tallow-2);text-decoration:none;font-size:14px;transition:color .25s}
+.lg-toc a:hover{color:var(--tallow)}
+.lg-toc .num{color:var(--brass);font-size:12px;min-width:20px;padding-top:2px}
+@media (max-width:960px){.lg-toc{display:none}}
+.lg-other{color:var(--brass);text-decoration:none;font-size:14px}
+.lg-body{display:grid;gap:clamp(30px,3.6vw,46px);max-width:72ch;min-width:0}
+.lg-body section{display:grid;gap:12px;scroll-margin-top:110px}
+.lg-body h2{display:flex;gap:16px;align-items:baseline;font-size:clamp(1.55rem,2.3vw,2.05rem);font-weight:400;letter-spacing:-.02em;line-height:1.1;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.lg-body h2 .num{font-size:12px;color:var(--brass);letter-spacing:.06em;flex:none}
+.lg-body p,.lg-body li{color:var(--tallow-2);font-size:15.5px;line-height:1.65}
+.lg-body b{color:var(--tallow);font-weight:500}
+.lg-body ul{margin:0;padding:0;list-style:none;display:grid;gap:7px}
+.lg-body li{position:relative;padding-left:22px}
+.lg-body li::before{content:"";position:absolute;left:2px;top:.78em;width:9px;height:1px;background:var(--brass)}
+.lg-body a{color:var(--brass-2);text-underline-offset:3px;text-decoration-color:rgba(201,164,108,.45)}
+.lg-card{margin:0;display:grid;border-radius:12px;background:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line)}
+.lg-card div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;padding:13px 18px;border-top:1px solid var(--line)}
+.lg-card div:first-child{border-top:0}
+.lg-card dt{color:var(--tallow-3);font-size:13px}
+.lg-card dd{margin:0;color:var(--tallow);font-size:15px;overflow-wrap:anywhere}
+@media (max-width:520px){.lg-card div{grid-template-columns:1fr;gap:3px}}
+mark.todo{background:rgba(231,205,159,.16);color:var(--brass-2);box-shadow:inset 0 0 0 1px rgba(231,205,159,.45);border-radius:4px;padding:0 6px;font-size:.92em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.agree{display:flex;gap:11px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--tallow-2);cursor:pointer}
+.agree input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--brass)}
+.agree a{color:var(--brass-2);text-underline-offset:2px}
+.ftr .ftr-legal{flex-basis:100%;gap:8px 26px;font-size:12.5px}
+.ftr .ftr-legal a{color:var(--tallow-3)}
 /* ============ ACCOUNT ============ */
 .acc-btn{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 14px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line-2);font-size:13.5px;font-weight:500;transition:box-shadow .3s;flex-shrink:0}
 .acc-btn:hover{box-shadow:inset 0 0 0 1px var(--brass)}
@@ -965,6 +1005,7 @@ form.order{display:grid;gap:14px;margin-top:6px}
 <div class="view" id="catView" hidden></div>
 <div class="view" id="staffView" hidden></div>
 <div class="view" id="accView" hidden></div>
+<div class="view" id="legalView" hidden></div>
 </main>
 
 <footer class="ftr">
@@ -972,6 +1013,7 @@ form.order{display:grid;gap:14px;margin-top:6px}
     <a class="logo" href="#top"><span class="logo-mark">МК</span><span class="logo-txt">Мясо Кубани <em>&amp; стейки</em></span></a>
     <nav aria-label="Ссылки"><a href="#staff">Бот для сотрудников · демо</a><a href="https://vk.ru/steykribaykupit" target="_blank" rel="noopener">ВКонтакте</a><a href="https://wa.me/79262443737" target="_blank" rel="noopener">WhatsApp</a><a href="https://viber.click/79262443737" target="_blank" rel="noopener">Viber</a></nav>
     <span>© 2026 · Цены на сайте не являются публичной офертой</span>
+    <nav class="ftr-legal" aria-label="Документы"><a href="#privacy">Политика конфиденциальности</a><a href="#consent">Согласие на обработку персональных данных</a></nav>
   </div>
 </footer>
 
@@ -1089,6 +1131,112 @@ if($('#menu'))$('#menu').innerHTML=SETS.map(s=>`<article class="set${s.hero?' he
   <button class="btn btn-ink" data-set="${s.id}">Добавить набор <span class="ar">→</span></button>
 </article>`).join('');
 
+
+/* ---------- legal: privacy policy & consent ---------- */
+/* Данные оператора персональных данных. Пустое поле показывается на сайте как жёлтая заглушка.
+   Заполните и пересоберите сайт (tools/assemble.py → tools/make_index.py). */
+const OPERATOR={
+  name:'',        // Например: «Индивидуальный предприниматель Иванов Иван Иванович» или «ООО „Мясо Кубани“»
+  short:'',       // Короткое имя для текста, например: «ИП Иванов И. И.»
+  inn:'',         // ИНН
+  ogrn:'',        // ОГРНИП или ОГРН
+  address:'',     // Юридический адрес или адрес регистрации ИП
+  email:'',       // E-mail для обращений по персональным данным
+  phone:'+7 926 244-37-37',
+  site:'lidmasterapp.ru/myaso-kubani',
+  shop:'Москва, Таллинская ул., 7, ТЦ «Московская ярмарка», 1 этаж',
+  updated:'26 октября 2026 г.'
+};
+const lgE=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const lgF=(k,label)=>OPERATOR[k]?lgE(OPERATOR[k]):`<mark class="todo">${label}</mark>`;
+function legalDocs(){
+  const op=lgF('short','ИП / ООО — сокращённо'),mail=OPERATOR.email?`<a href="mailto:${lgE(OPERATOR.email)}">${lgE(OPERATOR.email)}</a>`:lgF('email','e-mail для обращений');
+  const card=`<dl class="lg-card">
+    <div><dt>Оператор</dt><dd>${lgF('name','Полное наименование: ИП ФИО или ООО «…»')}</dd></div>
+    <div><dt>ИНН</dt><dd class="num">${lgF('inn','ИНН')}</dd></div>
+    <div><dt>ОГРН / ОГРНИП</dt><dd class="num">${lgF('ogrn','ОГРН / ОГРНИП')}</dd></div>
+    <div><dt>Адрес</dt><dd>${lgF('address','Юридический адрес')}</dd></div>
+    <div><dt>E-mail</dt><dd>${mail}</dd></div>
+    <div><dt>Телефон</dt><dd class="num"><a href="tel:${OPERATOR.phone.replace(/[^\d+]/g,'')}">${lgE(OPERATOR.phone)}</a></dd></div>
+  </dl>`;
+  const DATA=`<ul>
+      <li>имя;</li><li>номер телефона;</li><li>адрес доставки;</li>
+      <li>день рождения (число и месяц, если вы указали их в личном кабинете);</li>
+      <li>пожелания к заказу, состав, сумма и история заказов, начисленные и списанные бонусы;</li>
+      <li>идентификатор и имя в Telegram, если вы подключили бота лавки;</li>
+      <li>технические данные: IP-адрес, тип браузера, дата и время входа в личный кабинет.</li></ul>`;
+  const privacy={title:'Политика <em>конфиденциальности</em>',crumb:'Политика конфиденциальности',
+    lead:'Как лавка «Мясо Кубани и стейки» обрабатывает и защищает персональные данные покупателей.',
+    sections:[
+    ['Общие положения',`<p>Политика составлена по Федеральному закону от 27.07.2006 № 152-ФЗ «О персональных данных» и действует для всех данных, которые оператор получает от посетителей сайта <b>${lgE(OPERATOR.site)}</b>, из личного кабинета, Telegram-бота лавки, а также при заказе по телефону и в мессенджерах.</p>
+      <p>Оператор персональных данных — ${op}. Реквизиты указаны в конце документа.</p>
+      <p>Оформляя заказ или входя в личный кабинет, вы подтверждаете, что ознакомились с политикой, и даёте <a href="#consent">согласие на обработку персональных данных</a>.</p>`],
+    ['Какие данные мы обрабатываем',`<p>Только те, что нужны для заказа и программы лояльности:</p>${DATA}
+      <p>Мы не собираем данные о здоровье, убеждениях и другие специальные категории, а также биометрические данные. Данные банковских карт к нам не попадают: оплата проходит по QR-коду СБП в приложении вашего банка.</p>`],
+    ['Зачем',`<ul>
+      <li>принять, собрать, оплатить и доставить заказ или выдать его в лавке;</li>
+      <li>связаться с вами по заказу: уточнить вес, время, состав, сообщить статус;</li>
+      <li>вести личный кабинет: вход по коду, история заказов, сохранённые адреса;</li>
+      <li>начислять и списывать бонусы, дарить бонусы в день рождения;</li>
+      <li>выполнять требования законодательства, в том числе о бухгалтерском и налоговом учёте;</li>
+      <li>защищать сайт от злоупотреблений: ограничивать перебор кодов и массовые заказы.</li></ul>
+      <p>Рекламные рассылки мы не отправляем. Если когда-нибудь начнём, то только тем, кто отдельно на них согласится.</p>`],
+    ['Правовые основания',`<p>Ваше согласие (п. 1 ч. 1 ст. 6 152-ФЗ), заключение и исполнение договора купли-продажи, стороной которого вы являетесь (п. 5 ч. 1 ст. 6), и обязанности оператора по закону (п. 2 ч. 1 ст. 6).</p>`],
+    ['Как мы обрабатываем данные',`<p>С использованием средств автоматизации и без них. Действия: сбор, запись, систематизация, накопление, хранение, уточнение (обновление, изменение), извлечение, использование, передача (предоставление, доступ), блокирование, удаление, уничтожение.</p>
+      <p>Базы данных с персональными данными граждан России хранятся на серверах, расположенных в Российской Федерации (ч. 5 ст. 18 152-ФЗ). Доступ к данным есть только у сотрудников лавки, которым он нужен для работы с заказами.</p>`],
+    ['Кому мы передаём данные',`<ul>
+      <li><b>Курьеру или службе доставки</b> — имя, телефон, адрес и состав заказа, только для доставки.</li>
+      <li><b>Telegram</b> — если вы сами подключили бота лавки, через Telegram приходят коды входа и статусы заказов. Компания-владелец Telegram находится за пределами России, поэтому это трансграничная передача. Передаём минимум: номер заказа, статус, код входа.</li>
+      <li><b>Сервису SMS-рассылок</b> — номер телефона, если код входа отправляется по SMS.</li>
+      <li><b>Государственным органам</b> — только по законному запросу.</li></ul>
+      <p>Мы не продаём и не передаём данные для рекламы.</p>
+      <p>Страница сайта загружает шрифты Google Fonts и карту Яндекса. Эти сервисы получают ваш IP-адрес и данные браузера по собственным правилам, но имени, телефона и адреса не получают.</p>`],
+    ['Сколько храним',`<ul>
+      <li>коды входа — 10 минут;</li>
+      <li>сессия личного кабинета — пока вы не выйдете, но не дольше 90 дней без посещений;</li>
+      <li>данные личного кабинета — пока вы им пользуетесь или до отзыва согласия;</li>
+      <li>сведения о заказах — 5 лет, этого требует бухгалтерский и налоговый учёт.</li></ul>
+      <p>Когда цель достигнута или согласие отозвано, данные уничтожаются в течение 30 дней, если закон не требует хранить их дольше.</p>`],
+    ['Cookie и хранилище браузера',`<p>Чтобы личный кабинет работал, сервер ставит одну служебную cookie с идентификатором сессии. Она недоступна скриптам и не используется для рекламы. Корзина и черновик заказа хранятся только в вашем браузере (localStorage) и к нам не попадают, пока вы не оформите заказ. Счётчиков и рекламных трекеров на сайте нет.</p>`],
+    ['Ваши права',`<p>Вы можете:</p><ul>
+      <li>узнать, какие ваши данные мы обрабатываем и зачем;</li>
+      <li>исправить, заблокировать или удалить их, если они неполные, устарели или обрабатываются незаконно;</li>
+      <li>отозвать согласие на обработку;</li>
+      <li>обжаловать действия оператора в Роскомнадзоре или в суде.</li></ul>
+      <p>Напишите на ${mail} или позвоните по номеру ${lgE(OPERATOR.phone)}. Мы ответим в течение 10 рабочих дней. Если понадобится больше времени, срок продлим не более чем на 5 рабочих дней и сообщим причину. Имя, телефон и адреса можно изменить и в личном кабинете. Там же можно выйти на всех устройствах.</p>`],
+    ['Как мы защищаем данные',`<ul>
+      <li>вход в кабинет по одноразовому коду из Telegram, без паролей;</li>
+      <li>ограничение числа попыток ввода кода и запросов;</li>
+      <li>служебная cookie с флагами HttpOnly и Secure, передача данных по HTTPS;</li>
+      <li>сервер принимает запросы только с сайта лавки, секретные ключи хранятся вне кода;</li>
+      <li>доступ сотрудников к данным ограничен рабочими задачами.</li></ul>`],
+    ['Изменения политики',`<p>Мы можем обновлять политику. Новая редакция начинает действовать с момента публикации на этой странице. Действующая редакция всегда доступна по ссылке в подвале сайта.</p>`],
+    ['Реквизиты оператора',card]
+  ]};
+  const consent={title:'Согласие на обработку <em>персональных данных</em>',crumb:'Согласие на обработку ПД',
+    lead:'Это согласие вы даёте, когда отмечаете галочку при оформлении заказа или входе в личный кабинет.',
+    sections:[
+    ['Кому',`<p>Я, действуя свободно, своей волей и в своём интересе, даю согласие оператору — ${lgF('name','Полное наименование: ИП ФИО или ООО «…»')} (ИНН <span class="num">${lgF('inn','ИНН')}</span>, ОГРН/ОГРНИП <span class="num">${lgF('ogrn','ОГРН / ОГРНИП')}</span>, адрес: ${lgF('address','юридический адрес')}) — на обработку моих персональных данных на условиях ниже.</p>`],
+    ['Какие данные',DATA],
+    ['Для чего',`<p>Оформление, оплата, сборка и доставка заказов, связь со мной по заказу, ведение личного кабинета и бонусной программы, уведомления о статусе заказа, выполнение требований закона.</p>`],
+    ['Какие действия',`<p>Сбор, запись, систематизация, накопление, хранение, уточнение (обновление, изменение), извлечение, использование, передача (предоставление, доступ) курьеру или службе доставки, а при подключении бота — передача через Telegram, в том числе трансграничная, блокирование, удаление, уничтожение. Обработка ведётся с использованием средств автоматизации и без них.</p>`],
+    ['Срок и отзыв',`<p>Согласие действует до достижения целей обработки или до его отзыва. Отозвать согласие можно в любой момент: напишите на ${mail} или по адресу оператора. После отзыва оператор прекращает обработку и уничтожает данные в течение 30 дней, кроме сведений, которые закон обязывает хранить (например, данные о заказах для бухгалтерского учёта).</p>`],
+    ['Подробности',`<p>Как мы храним и защищаем данные, описано в <a href="#privacy">Политике конфиденциальности</a>.</p>`]
+  ]};
+  return {privacy,consent};
+}
+function renderLegal(kind){
+  const d=legalDocs()[kind],other=kind==='privacy'?['#consent','Согласие на обработку персональных данных']:['#privacy','Политика конфиденциальности'];
+  $('#legalView').innerHTML=`<div class="legal"><div class="wrap">
+    <aside class="lg-side"><p class="crumbs mono"><a href="#top">Главная</a><span>/</span><span>${d.crumb}</span></p>
+      <h1>${d.title}</h1><p class="lead">${d.lead}</p><p class="mono lg-upd">Редакция от ${lgE(OPERATOR.updated)}</p>
+      <div class="lg-sticky"><nav class="lg-toc" aria-label="Содержание">${d.sections.map((s,i)=>`<a href="#${kind}" data-lgsec="${i}"><span class="num">${String(i+1).padStart(2,'0')}</span>${s[0]}</a>`).join('')}</nav>
+      <a class="lg-other" href="${other[0]}">${other[1]} <span class="ar">→</span></a></div></aside>
+    <article class="lg-body">${d.sections.map((s,i)=>`<section id="lg-${i}"><h2><span class="num mono">${String(i+1).padStart(2,'0')}</span>${s[0]}</h2>${s[1]}</section>`).join('')}</article>
+  </div></div>`;
+}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-lgsec]');if(!a)return;e.preventDefault();const el=document.getElementById('lg-'+a.dataset.lgsec);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})});
+const AGREE=(id)=>`<label class="agree"><input type="checkbox" id="${id}"><span>Соглашаюсь на <a href="#consent" target="_blank">обработку персональных данных</a> и принимаю <a href="#privacy" target="_blank">политику конфиденциальности</a></span></label>`;
 
 /* ---------- API (real server or in-browser demo) ---------- */
 const API=(window.SHOP_API||'').replace(/\/$/,'');
@@ -1224,7 +1372,7 @@ function loginView(){
   const s=login;
   const perks=`<ul class="perks big"><li><b>300 бонусов</b> сразу после регистрации</li><li><b>Кешбэк 3–7%</b> с каждого заказа бонусами</li><li><b>1 000 бонусов</b> в день рождения</li><li><b>История заказов</b> и повтор в один клик</li></ul>`;
   let form;
-  if(s.step==='phone')form=`<form class="lform" id="lPhone"><div class="fld"><label for="l-phone">Номер телефона</label><input id="l-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 900 000-00-00" value="${escA(s.phone||'')}"></div><p class="err" id="lErr" hidden></p><button class="btn btn-fill" type="submit">Получить код <span class="ar">→</span></button><p class="hint">Код придёт в Telegram от бота лавки. Пароль не нужен.</p></form>`;
+  if(s.step==='phone')form=`<form class="lform" id="lPhone"><div class="fld"><label for="l-phone">Номер телефона</label><input id="l-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 900 000-00-00" value="${escA(s.phone||'')}"></div>${AGREE('l-agree')}<p class="err" id="lErr" hidden></p><button class="btn btn-fill" type="submit">Получить код <span class="ar">→</span></button><p class="hint">Код придёт в Telegram от бота лавки. Пароль не нужен.</p></form>`;
   else if(s.step==='code')form=`<form class="lform" id="lCode"><p class="lstep">${escA(s.hint)}</p><div class="fld"><label for="l-code">Код из 6 цифр</label><input id="l-code" class="code-in num" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"></div><p class="err" id="lErr" hidden></p><button class="btn btn-fill" type="submit">Войти</button><button class="btn btn-line" type="button" id="lBack">Изменить номер</button></form>`;
   else form=`<div class="lform"><p class="lstep">${escA(s.hint)}</p><a class="btn btn-fill" href="${escA(s.link)}" target="_blank" rel="noopener">Открыть Telegram <span class="ar">→</span></a><p class="wait"><i></i>Ждём подтверждения номера в Telegram…</p><p class="err" id="lErr" hidden></p><button class="btn btn-line" type="button" id="lBack">Изменить номер</button></div>`;
   return `<div class="acc wrap"><div class="login">
@@ -1234,8 +1382,8 @@ function loginView(){
 }
 function bindLogin(){
   const err=m=>{const e=$('#lErr');if(e){e.textContent=m;e.hidden=false}};
-  const f1=$('#lPhone');if(f1){$('#l-phone').focus();f1.onsubmit=async e=>{e.preventDefault();const btn=f1.querySelector('[type=submit]');btn.disabled=true;
-    try{const r=await api('/api/auth/start',{phone:$('#l-phone').value});login={step:r.method==='telegram_link'?'link':'code',nonce:r.nonce,hint:r.hint,link:r.link,phone:$('#l-phone').value};renderAccount();if(login.step==='link')startPoll()}
+  const f1=$('#lPhone');if(f1){$('#l-phone').focus();f1.onsubmit=async e=>{e.preventDefault();if(!$('#l-agree').checked){err('Отметьте согласие на обработку персональных данных.');return}const btn=f1.querySelector('[type=submit]');btn.disabled=true;
+    try{const r=await api('/api/auth/start',{consent:true,phone:$('#l-phone').value});login={step:r.method==='telegram_link'?'link':'code',nonce:r.nonce,hint:r.hint,link:r.link,phone:$('#l-phone').value};renderAccount();if(login.step==='link')startPoll()}
     catch(x){err(x.message);btn.disabled=false}}}
   const f2=$('#lCode');if(f2){$('#l-code').focus();f2.onsubmit=async e=>{e.preventDefault();const btn=f2.querySelector('[type=submit]');btn.disabled=true;
     try{await api('/api/auth/verify',{nonce:login.nonce,code:$('#l-code').value});await afterLogin()}catch(x){err(x.message);btn.disabled=false}}}
@@ -1310,12 +1458,13 @@ document.addEventListener('click',e=>{
 });
 
 /* ---------- router ---------- */
-const home=$('#home'),catView=$('#catView'),staffView=$('#staffView'),accView=$('#accView');
+const home=$('#home'),catView=$('#catView'),staffView=$('#staffView'),accView=$('#accView'),legalView=$('#legalView');
 let lastView='home';
 function route(){
   const h=decodeURIComponent(location.hash.slice(1));
-  accView.hidden=h!=='account';
-  if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
+  accView.hidden=h!=='account';legalView.hidden=!(h==='privacy'||h==='consent');
+  if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Мясо Кубани и стейки'}
+  else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
   else if(CATS[h]){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderCat(h);scrollTo(0,0);lastView='cat';document.title=CATS[h].name+' — Мясо Кубани и стейки'}
   else if(h==='staff'){home.hidden=true;catView.hidden=true;staffView.hidden=false;renderStaff();scrollTo(0,0);lastView='staff';document.title='Бот для сотрудников — Мясо Кубани и стейки'}
   else{const was=lastView;home.hidden=false;catView.hidden=true;staffView.hidden=true;lastView='home';document.title='Мясо Кубани и стейки';
@@ -1369,6 +1518,7 @@ function renderDrawer(){
    <div class="fld" id="addrFld"><label for="f-addr">Адрес</label><input id="f-addr" autocomplete="street-address" placeholder="Улица, дом, квартира" list="addrList" value="${ME&&ME.addresses[0]?escA(ME.addresses[0]):''}">${ME?`<datalist id="addrList">${ME.addresses.map(a=>`<option value="${escA(a)}">`).join('')}</datalist>`:''}</div>
    <div class="row2"><div class="fld"><label for="f-date">День</label><select id="f-date">${dates().map(d=>`<option>${d}</option>`).join('')}</select></div><div class="fld"><label for="f-time">Время</label><select id="f-time"><option>10:00–12:00</option><option>12:00–14:00</option><option>14:00–16:00</option><option>16:00–18:00</option><option>18:00–20:00</option></select></div></div>
    <div class="fld"><label for="f-note">Пожелания мяснику</label><textarea id="f-note" placeholder="Например: рибай толщиной 3 см, кости распилить">${ME?escA(ME.note):''}</textarea></div>
+   ${AGREE('f-agree')}
    <p class="err" id="formErr" hidden></p>
    <button class="btn btn-fill" type="submit" style="justify-content:center">Перейти к оплате · ${rub(sum)} <span class="ar">→</span></button>
   </form>`;
@@ -1394,11 +1544,12 @@ drawer.addEventListener('click',e=>{
   if(q<minQ(p))delete cart[id];else cart[id]=q;save();renderCount();renderDrawer();
 });
 drawer.addEventListener('change',e=>{if(e.target.name==='how')$('#addrFld').hidden=e.target.value==='p';
-  if(e.target.id==='useB'){const keep={n:$('#f-name').value,t:$('#f-tel').value,a:$('#f-addr').value,no:$('#f-note').value,p:$('#how-p').checked};useBonus=e.target.checked;renderDrawer();$('#f-name').value=keep.n;$('#f-tel').value=keep.t;$('#f-addr').value=keep.a;$('#f-note').value=keep.no;if(keep.p){$('#how-p').checked=true;$('#addrFld').hidden=true}}});
+  if(e.target.id==='useB'){const keep={n:$('#f-name').value,t:$('#f-tel').value,a:$('#f-addr').value,no:$('#f-note').value,p:$('#how-p').checked,g:$('#f-agree').checked};useBonus=e.target.checked;renderDrawer();$('#f-name').value=keep.n;$('#f-tel').value=keep.t;$('#f-addr').value=keep.a;$('#f-note').value=keep.no;$('#f-agree').checked=keep.g;if(keep.p){$('#how-p').checked=true;$('#addrFld').hidden=true}}});
 drawer.addEventListener('submit',async e=>{e.preventDefault();
   const name=$('#f-name').value.trim(),tel=$('#f-tel').value.trim(),pickup=$('#how-p').checked,addr=$('#f-addr').value.trim();
   const err=[];if(!name)err.push('имя');if(tel.replace(/\D/g,'').length<10)err.push('телефон из 10–11 цифр');if(!pickup&&!addr)err.push('адрес доставки');
   const box=$('#formErr');if(err.length){box.textContent='Заполните: '+err.join(', ')+'.';box.hidden=false;return}
+  if(!$('#f-agree').checked){box.textContent='Отметьте согласие на обработку персональных данных.';box.hidden=false;return}
   const t=total(),free=t>=5000;
   order={no:1100+Math.floor(Math.random()*800),name,tel,pickup,addr:pickup?'Самовывоз · Таллинская, 7':addr,date:$('#f-date').value,time:$('#f-time').value,note:$('#f-note').value.trim(),
     items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>{const p=ALL[id];return {name:p.name,qty:qLabel(p,q),sum:lineSum(p,q)}}),delivery:free||pickup?0:500};
@@ -1406,7 +1557,7 @@ drawer.addEventListener('submit',async e=>{e.preventDefault();
   const btn=e.target.querySelector('[type=submit]');btn.disabled=true;
   try{
     const maxB=ME?Math.min(ME.bonus,Math.floor(total()*ME.maxBonusShare)):0;
-    const j=await api('/api/orders',{name,tel,pickup,addr,date:order.date,time:order.time,note:order.note,useBonus:useBonus?maxB:0,items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>({id,q}))});
+    const j=await api('/api/orders',{consent:true,name,tel,pickup,addr,date:order.date,time:order.time,note:order.note,useBonus:useBonus?maxB:0,items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>({id,q}))});
     Object.assign(order,{no:j.no,token:j.token,total:j.total,delivery:j.delivery,bonusUsed:j.bonusUsed,qr:j.payQr?API+j.payQr:null,botLink:j.botLink,payNote:j.payNote,telegramLinked:j.telegramLinked});
     useBonus=false;if(ME)loadMe();
   }catch(err){box.textContent='Не удалось отправить заказ: '+err.message+'. Позвоните нам: +7 926 244-37-37.';box.hidden=false;btn.disabled=false;return}

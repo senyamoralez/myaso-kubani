@@ -52,7 +52,8 @@ const ok = (name) => console.log('✓', name);
     const PHONE = '8 (916) 555-12-40';
 
     // --- 1. first login: confirm number via Telegram contact
-    let r = await api('/api/auth/start', { phone: PHONE });
+    let r = await api('/api/auth/start', { phone: PHONE }); assert.equal(r.code, 400); ok('без согласия на обработку ПД вход не начинается');
+    r = await api('/api/auth/start', { consent: true, phone: PHONE });
     assert.equal(r.j.method, 'telegram_link'); assert.match(r.j.link, /start=login_/);
     const nonce = r.j.nonce; ok('новый номер → ссылка на бота');
     r = await api('/api/auth/poll', { nonce }); assert.equal(r.j.waiting, true); ok('пока номер не подтверждён — вход не выполнен');
@@ -73,11 +74,11 @@ const ok = (name) => console.log('✓', name);
 
     // --- 2. second login: code in Telegram, brute force protection
     await api('/api/auth/logout', {}); jar = '';
-    r = await api('/api/auth/start', { phone: '+7 916 555 12 40' }); assert.equal(r.j.method, 'telegram_code');
+    r = await api('/api/auth/start', { consent: true, phone: '+7 916 555 12 40' }); assert.equal(r.j.method, 'telegram_code');
     const n2 = r.j.nonce; const code = sent.at(-1).text.match(/<b>(\d{6})<\/b>/)[1]; ok('повторный вход → код в Telegram');
     for (let i = 0; i < 5; i++) { r = await api('/api/auth/verify', { nonce: n2, code: '000000' === code ? '111111' : '000000' }); }
     r = await api('/api/auth/verify', { nonce: n2, code }); assert.equal(r.code, 429); ok('после 5 неверных кодов — блокировка, даже верный код не проходит');
-    r = await api('/api/auth/start', { phone: PHONE }); const n3 = r.j.nonce, code3 = sent.at(-1).text.match(/<b>(\d{6})<\/b>/)[1];
+    r = await api('/api/auth/start', { consent: true, phone: PHONE }); const n3 = r.j.nonce, code3 = sent.at(-1).text.match(/<b>(\d{6})<\/b>/)[1];
     r = await api('/api/auth/verify', { nonce: n3, code: code3 }); assert.equal(r.j.ok, true); ok('новый код → вход');
 
     // --- 3. foreign site cannot act
@@ -88,7 +89,7 @@ const ok = (name) => console.log('✓', name);
     r = await api('/api/me', { birthday: '01.01' }); assert.equal(r.j.birthday, '15.03'); ok('день рождения задаётся один раз');
 
     // --- 5. order with bonuses → done → cashback goes to the linked Telegram automatically
-    r = await api('/api/orders', { name: 'Анна', tel: PHONE, addr: 'ул. Таллинская, 20', date: 'Сегодня', time: '14:00–16:00', items: [{ id: 'ribeye-steaks', q: 2 }], useBonus: 5000 });
+    r = await api('/api/orders', { consent: true, name: 'Анна', tel: PHONE, addr: 'ул. Таллинская, 20', date: 'Сегодня', time: '14:00–16:00', items: [{ id: 'ribeye-steaks', q: 2 }], useBonus: 5000 });
     assert.equal(r.code, 201); const o = r.j;
     assert.equal(o.bonusUsed, 300); assert.equal(o.total, 4050 + 500 - 300); assert.equal(o.telegramLinked, true); ok('списано 300 бонусов (не больше баланса), заказ привязан к Telegram');
     await wait(200);
@@ -101,7 +102,7 @@ const ok = (name) => console.log('✓', name);
     assert.ok(sent.some(m => m.chat_id == USER_CHAT && /Начислили \d+ бонусов/.test(m.text))); ok(`кешбэк 3%: +${cb} бонусов, покупатель получил уведомление`);
 
     // --- 6. cancel returns bonuses
-    r = await api('/api/orders', { name: 'Анна', tel: PHONE, pickup: true, items: [{ id: 'chuck', q: 1 }], useBonus: 999 });
+    r = await api('/api/orders', { consent: true, name: 'Анна', tel: PHONE, pickup: true, items: [{ id: 'chuck', q: 1 }], useBonus: 999 });
     const o2 = r.j; assert.equal(o2.bonusUsed, cb); await wait(200);
     staffMsg[o2.no] = sent.filter(m => m.chat_id == STAFF && m.text?.includes('№ ' + o2.no))[0].message_id;
     press(`cancel:${o2.no}`); await wait(300);

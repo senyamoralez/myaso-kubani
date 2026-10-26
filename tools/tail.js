@@ -49,12 +49,13 @@ document.addEventListener('click',e=>{
 });
 
 /* ---------- router ---------- */
-const home=$('#home'),catView=$('#catView'),staffView=$('#staffView'),accView=$('#accView');
+const home=$('#home'),catView=$('#catView'),staffView=$('#staffView'),accView=$('#accView'),legalView=$('#legalView');
 let lastView='home';
 function route(){
   const h=decodeURIComponent(location.hash.slice(1));
-  accView.hidden=h!=='account';
-  if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
+  accView.hidden=h!=='account';legalView.hidden=!(h==='privacy'||h==='consent');
+  if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Мясо Кубани и стейки'}
+  else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
   else if(CATS[h]){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderCat(h);scrollTo(0,0);lastView='cat';document.title=CATS[h].name+' — Мясо Кубани и стейки'}
   else if(h==='staff'){home.hidden=true;catView.hidden=true;staffView.hidden=false;renderStaff();scrollTo(0,0);lastView='staff';document.title='Бот для сотрудников — Мясо Кубани и стейки'}
   else{const was=lastView;home.hidden=false;catView.hidden=true;staffView.hidden=true;lastView='home';document.title='Мясо Кубани и стейки';
@@ -108,6 +109,7 @@ function renderDrawer(){
    <div class="fld" id="addrFld"><label for="f-addr">Адрес</label><input id="f-addr" autocomplete="street-address" placeholder="Улица, дом, квартира" list="addrList" value="${ME&&ME.addresses[0]?escA(ME.addresses[0]):''}">${ME?`<datalist id="addrList">${ME.addresses.map(a=>`<option value="${escA(a)}">`).join('')}</datalist>`:''}</div>
    <div class="row2"><div class="fld"><label for="f-date">День</label><select id="f-date">${dates().map(d=>`<option>${d}</option>`).join('')}</select></div><div class="fld"><label for="f-time">Время</label><select id="f-time"><option>10:00–12:00</option><option>12:00–14:00</option><option>14:00–16:00</option><option>16:00–18:00</option><option>18:00–20:00</option></select></div></div>
    <div class="fld"><label for="f-note">Пожелания мяснику</label><textarea id="f-note" placeholder="Например: рибай толщиной 3 см, кости распилить">${ME?escA(ME.note):''}</textarea></div>
+   ${AGREE('f-agree')}
    <p class="err" id="formErr" hidden></p>
    <button class="btn btn-fill" type="submit" style="justify-content:center">Перейти к оплате · ${rub(sum)} <span class="ar">→</span></button>
   </form>`;
@@ -133,11 +135,12 @@ drawer.addEventListener('click',e=>{
   if(q<minQ(p))delete cart[id];else cart[id]=q;save();renderCount();renderDrawer();
 });
 drawer.addEventListener('change',e=>{if(e.target.name==='how')$('#addrFld').hidden=e.target.value==='p';
-  if(e.target.id==='useB'){const keep={n:$('#f-name').value,t:$('#f-tel').value,a:$('#f-addr').value,no:$('#f-note').value,p:$('#how-p').checked};useBonus=e.target.checked;renderDrawer();$('#f-name').value=keep.n;$('#f-tel').value=keep.t;$('#f-addr').value=keep.a;$('#f-note').value=keep.no;if(keep.p){$('#how-p').checked=true;$('#addrFld').hidden=true}}});
+  if(e.target.id==='useB'){const keep={n:$('#f-name').value,t:$('#f-tel').value,a:$('#f-addr').value,no:$('#f-note').value,p:$('#how-p').checked,g:$('#f-agree').checked};useBonus=e.target.checked;renderDrawer();$('#f-name').value=keep.n;$('#f-tel').value=keep.t;$('#f-addr').value=keep.a;$('#f-note').value=keep.no;$('#f-agree').checked=keep.g;if(keep.p){$('#how-p').checked=true;$('#addrFld').hidden=true}}});
 drawer.addEventListener('submit',async e=>{e.preventDefault();
   const name=$('#f-name').value.trim(),tel=$('#f-tel').value.trim(),pickup=$('#how-p').checked,addr=$('#f-addr').value.trim();
   const err=[];if(!name)err.push('имя');if(tel.replace(/\D/g,'').length<10)err.push('телефон из 10–11 цифр');if(!pickup&&!addr)err.push('адрес доставки');
   const box=$('#formErr');if(err.length){box.textContent='Заполните: '+err.join(', ')+'.';box.hidden=false;return}
+  if(!$('#f-agree').checked){box.textContent='Отметьте согласие на обработку персональных данных.';box.hidden=false;return}
   const t=total(),free=t>=5000;
   order={no:1100+Math.floor(Math.random()*800),name,tel,pickup,addr:pickup?'Самовывоз · Таллинская, 7':addr,date:$('#f-date').value,time:$('#f-time').value,note:$('#f-note').value.trim(),
     items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>{const p=ALL[id];return {name:p.name,qty:qLabel(p,q),sum:lineSum(p,q)}}),delivery:free||pickup?0:500};
@@ -145,7 +148,7 @@ drawer.addEventListener('submit',async e=>{e.preventDefault();
   const btn=e.target.querySelector('[type=submit]');btn.disabled=true;
   try{
     const maxB=ME?Math.min(ME.bonus,Math.floor(total()*ME.maxBonusShare)):0;
-    const j=await api('/api/orders',{name,tel,pickup,addr,date:order.date,time:order.time,note:order.note,useBonus:useBonus?maxB:0,items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>({id,q}))});
+    const j=await api('/api/orders',{consent:true,name,tel,pickup,addr,date:order.date,time:order.time,note:order.note,useBonus:useBonus?maxB:0,items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>({id,q}))});
     Object.assign(order,{no:j.no,token:j.token,total:j.total,delivery:j.delivery,bonusUsed:j.bonusUsed,qr:j.payQr?API+j.payQr:null,botLink:j.botLink,payNote:j.payNote,telegramLinked:j.telegramLinked});
     useBonus=false;if(ME)loadMe();
   }catch(err){box.textContent='Не удалось отправить заказ: '+err.message+'. Позвоните нам: +7 926 244-37-37.';box.hidden=false;btn.disabled=false;return}

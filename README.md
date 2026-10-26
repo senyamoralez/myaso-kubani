@@ -30,6 +30,7 @@ python3 tools/make_index.py   # оборачивает в site/index.html
 - Тексты и разметка главной — `tools/base.html`.
 - Стили — `tools/cat.css`, `tools/account.css`.
 - Логика — `tools/head.js`, `tools/account.js`, `tools/tail.js`.
+- Политика конфиденциальности и согласие на обработку ПД — `tools/legal.js` (страницы `#privacy` и `#consent`). Реквизиты оператора — в объекте `OPERATOR` в начале файла: пока поле пустое, на сайте вместо него видна жёлтая заглушка.
 - Каталог (товары, цены, фото) — `tools/catalog.json`. Его же копия лежит в `bot/catalog.json`: при смене цен обновите обе.
 
 `tools/build_catalog.py` пересобирает каталог из фото поставщиков. Исходные архивы в репозиторий не входят.

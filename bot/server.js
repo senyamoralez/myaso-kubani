@@ -301,6 +301,7 @@ async function onMessage(m) {
     for (const u of Object.values(db.users)) if (u.chat === chat && u.phone !== phone) u.chat = null;
     const u = getUser(phone, true);
     u.chat = chat;
+    if (entry?.[1].consentAt && !u.consentAt) u.consentAt = entry[1].consentAt;
     if (!u.name) u.name = str(m.from?.first_name, 60);
     if (entry) entry[1].confirmed = phone;
     save();
@@ -415,11 +416,12 @@ async function sendSms(phone, text) {
 async function authStart(body, ip) {
   const phone = normPhone(body.phone);
   if (!phone) throw httpErr(400, 'Введите номер телефона в формате +7 900 000-00-00');
+  if (body.consent !== true) throw httpErr(400, 'Подтвердите согласие на обработку персональных данных');
   if (hit('ip:' + ip, 20, 3600e3)) throw httpErr(429, 'Слишком много попыток. Попробуйте через час.');
   if (hit('ph:' + phone, 5, 3600e3)) throw httpErr(429, 'Слишком много запросов кода на этот номер. Попробуйте через час.');
   const nonce = crypto.randomBytes(16).toString('hex');
   const u = db.users[phone];
-  const l = { phone, exp: Date.now() + 10 * 60e3, attempts: 0, code: null, chat: null, confirmed: null };
+  const l = { phone, exp: Date.now() + 10 * 60e3, attempts: 0, code: null, chat: null, confirmed: null, consentAt: iso() };
   db.logins[nonce] = l;
   if (u?.chat) {
     const code = String(crypto.randomInt(0, 1e6)).padStart(6, '0');
@@ -460,7 +462,8 @@ function authVerify(body, res, ua) {
   const ok = code.length === 6 && crypto.timingSafeEqual(Buffer.from(sha(str(body.nonce, 64) + code)), Buffer.from(l.code));
   if (!ok) { save(); throw httpErr(400, `Неверный код. Осталось попыток: ${5 - l.attempts}.`); }
   delete db.logins[str(body.nonce, 64)];
-  getUser(l.phone, true);
+  const nu = getUser(l.phone, true);
+  if (!nu.consentAt) { nu.consentAt = l.consentAt || iso(); save(); }
   newSession(res, l.phone, ua);
   return { ok: true };
 }
@@ -535,6 +538,7 @@ async function createOrder(b, sess) {
   const name = str(b.name, 60), tel = str(b.tel, 30), pickup = !!b.pickup;
   if (!name || tel.replace(/\D/g, '').length < 10) throw httpErr(400, 'Укажите имя и телефон');
   if (!pickup && !str(b.addr, 200)) throw httpErr(400, 'Укажите адрес доставки');
+  if (b.consent !== true) throw httpErr(400, 'Подтвердите согласие на обработку персональных данных');
   if (!Array.isArray(b.items) || !b.items.length || b.items.length > 60) throw httpErr(400, 'Корзина пуста');
   const items = [];
   for (const it of b.items) {
@@ -552,7 +556,7 @@ async function createOrder(b, sess) {
     bonusUsed = Math.min(Math.floor(+b.useBonus), u.bonus, Math.floor(goods * C.maxBonusShare));
   }
   const no = String(++db.seq);
-  const o = { no, token: crypto.randomBytes(6).toString('hex'), createdAt: iso(), status: 'new',
+  const o = { no, token: crypto.randomBytes(6).toString('hex'), createdAt: iso(), consentAt: iso(), status: 'new',
     customer: { name, tel }, user: u?.phone || null, pickup, addr: pickup ? '' : str(b.addr, 200), date: str(b.date, 40), time: str(b.time, 40), note: str(b.note, 400),
     items, goods, delivery, bonusUsed, total: goods + delivery - bonusUsed, fact: null, staffMsgId: null, customerChat: null, cashback: 0,
     history: [{ at: iso(), text: 'заказ с сайта' + (u ? ' (личный кабинет)' : '') }] };
