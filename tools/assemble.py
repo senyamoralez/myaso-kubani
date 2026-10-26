@@ -57,7 +57,7 @@ proc_offer = block('/* ---------- 5. process ---------- */', '/* ---------- cart
 cat = json.load(open(T + '/catalog.json', encoding='utf-8'))
 head = open(T + '/head.js', encoding='utf-8').read().replace('/*CATALOG*/{"items":[],"covers":{}}/*END*/', json.dumps(cat, ensure_ascii=False))
 tail = open(T + '/legal.js', encoding='utf-8').read() + '\n' + open(T + '/account.js', encoding='utf-8').read() + '\n' + open(T + '/tail.js', encoding='utf-8').read()
-new_js = '<!-- Адрес сервера заказов. Пусто = демо-режим без отправки. Пример: https://api.myaso-kubani.ru -->\n<script>window.SHOP_API="";</script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>\n<script>\n' + head + '\n' + hero_hdr + '\n' + done + '\n' + proc_offer + '\n' + tail + '\n'
+new_js = '<!-- Адрес сервера заказов. Пусто = демо-режим без отправки. Пример: https://api.myaso-kubani.ru -->\n<script>window.SHOP_API="https://myaso-kubani.senyamoralez.workers.dev";</script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>\n<script>\n' + head + '\n' + hero_hdr + '\n' + done + '\n' + proc_offer + '\n' + tail + '\n'
 new_js = new_js.replace("$('#menu').innerHTML=", "if($('#menu'))$('#menu').innerHTML=")
 s = s.replace(js_old, new_js)
 s = s.replace('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>\n<script>\n<script', '<script')
