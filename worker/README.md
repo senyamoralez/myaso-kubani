@@ -12,18 +12,19 @@
 
 ## Запуск (один раз)
 
-1. **Бот.** В Telegram откройте @BotFather → `/newbot` → придумайте имя и адрес (должен заканчиваться на `bot`). Скопируйте токен.
-2. **Cloudflare.** Workers & Pages → Create → Import a repository → `senyamoralez/myaso-kubani`.
-   - Project name: `myaso-kubani`
-   - Root directory (Advanced): `worker`
-   - Deploy command: `npx wrangler deploy`
-3. После первого деплоя: Settings → Variables and Secrets → Add → тип **Secret**, имя `BOT_TOKEN`, значение — токен из BotFather → Deploy.
-4. Откройте `https://myaso-kubani.<ваш-поддомен>.workers.dev/health`. Должно быть `"bot": "имя_бота"`.
+Деплой делает GitHub Actions (`.github/workflows/worker.yml`) при каждом push в `main`: тесты → `wrangler deploy` → токен бота.
+
+1. **Бот.** В Telegram: @BotFather → `/newbot` → имя и адрес на `…bot`. Скопируйте токен.
+2. **Токен Cloudflare.** dash.cloudflare.com → My Profile → API Tokens → Create Token → шаблон «Edit Cloudflare Workers» → Continue → Create. Скопируйте токен.
+3. **Секреты в GitHub.** Репозиторий → Settings → Secrets and variables → Actions → New repository secret:
+   - `CLOUDFLARE_API_TOKEN` — токен из шага 2;
+   - `BOT_TOKEN` — токен из шага 1.
+4. Actions → «Сервер на Cloudflare» → Run workflow. В конце шаг «Проверка сервера» покажет `"bot": "имя_бота"`.
 5. **Рабочий чат.** Создайте группу в Telegram, добавьте бота и сотрудников, напишите в группе `/staff`.
 6. **QR для оплаты.** Отправьте в эту группу картинку QR-кода СБП с подписью `/qr`.
 7. **Сайт.** В `tools/assemble.py` впишите адрес воркера в `window.SHOP_API`, пересоберите и запушьте.
 
-Дальше каждый push в `main` обновляет и сайт (GitHub Pages), и сервер (Cloudflare).
+Адрес сервера: `https://myaso-kubani.senyamoralez.workers.dev`.
 
 ## Проверка
 

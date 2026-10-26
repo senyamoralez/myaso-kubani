@@ -1,0 +1,46 @@
+# Деплой сервера лавки (бот + личный кабинет) на Cloudflare Workers при каждом push в main.
+# Нужны секреты репозитория (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN — токен Cloudflare с правами «Edit Cloudflare Workers»
+#   BOT_TOKEN            — токен Telegram-бота от @BotFather
+name: Сервер на Cloudflare
+
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', 'bot/**', 'tools/catalog.json', '.github/workflows/worker.yml']
+  workflow_dispatch:
+
+concurrency: { group: worker-deploy, cancel-in-progress: false }
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 3bbace8d46f5cf5489bfc3f8536a80b4
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Установка
+        working-directory: worker
+        run: npm ci
+      - name: Проверки (Node и среда Cloudflare)
+        working-directory: worker
+        run: |
+          (cd ../bot && npm test)
+          npm test
+      - name: Деплой
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        working-directory: worker
+        run: npx wrangler deploy
+      - name: Токен бота
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.BOT_TOKEN != ''
+        working-directory: worker
+        run: printf '%s' "$BOT_TOKEN" | npx wrangler secret put BOT_TOKEN
+      - name: Проверка сервера
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: |
+          sleep 5
+          curl -fsS https://myaso-kubani.senyamoralez.workers.dev/health; echo
