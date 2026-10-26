@@ -21,3 +21,7 @@ doc=f'''<!doctype html>
 '''
 open(os.path.join(ROOT, 'site', 'index.html'),'w',encoding='utf-8').write(doc)
 print('ok',len(doc))
+
+import subprocess, sys
+if subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'check_js.py')]).returncode:
+    sys.exit('site/index.html собран, но в скриптах ошибка — не публикуйте')
