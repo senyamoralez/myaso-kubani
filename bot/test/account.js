@@ -1,7 +1,7 @@
 // Тест личного кабинета: вход через Telegram, коды, бонусы, безопасность.
 'use strict';
 const http = require('node:http');
-const { spawn } = require('node:child_process');
+const { startServer } = require('./target');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -10,7 +10,7 @@ const assert = require('node:assert');
 const STAFF = -1009, USER_CHAT = 777, SITE = 'http://shop.test';
 const sent = [], answers = [];
 let queue = [], waiters = [], upd = 1, msgId = 100;
-const push = u => { u.update_id = upd++; queue.push(u); waiters.splice(0).forEach(w => w()); };
+const push = u => { u.update_id = upd++; if (srv.hook) return srv.hook(u); queue.push(u); waiters.splice(0).forEach(w => w()); };
 const mock = http.createServer((req, res) => {
   let b = ''; req.on('data', c => b += c); req.on('end', () => {
     const body = b ? JSON.parse(b) : {}, method = req.url.split('/').pop();
@@ -30,9 +30,8 @@ const mock = http.createServer((req, res) => {
 }).listen(9201);
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lavka-acc-'));
-const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-  env: { ...process.env, BOT_TOKEN: 'T', STAFF_CHAT_ID: String(STAFF), TG_API: 'http://127.0.0.1:9201', PORT: '9202', DATA_DIR: dataDir,
-    CATALOG: path.join(__dirname, '..', 'catalog.json'), ALLOWED_ORIGIN: SITE, COOKIE_SECURE: 'false' }, stdio: ['ignore', 'pipe', 'pipe'] });
+const srv = startServer(9202, { BOT_TOKEN: 'T', STAFF_CHAT_ID: String(STAFF), TG_API: 'http://127.0.0.1:9201', PORT: '9202', DATA_DIR: dataDir,
+    CATALOG: path.join(__dirname, '..', 'catalog.json'), ALLOWED_ORIGIN: SITE, COOKIE_SECURE: 'false' });
 let log = ''; srv.stdout.on('data', d => log += d); srv.stderr.on('data', d => log += d);
 const wait = ms => new Promise(r => setTimeout(r, ms));
 let jar = '';
@@ -48,7 +47,7 @@ const ok = (name) => console.log('✓', name);
 
 (async () => {
   try {
-    await wait(600);
+    await srv.ready; await wait(300);
     const PHONE = '8 (916) 555-12-40';
 
     // --- 1. first login: confirm number via Telegram contact

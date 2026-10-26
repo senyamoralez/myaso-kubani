@@ -4,8 +4,11 @@ const LEVELS=[{name:'Choice',from:0,rate:.03},{name:'Prime',from:20000,rate:.05}
 const escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function api(path,body){
   if(!API)return demoApi(path,body);
-  const r=await fetch(API+path,{method:body?'POST':'GET',credentials:'include',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+  let tok='';try{tok=localStorage.getItem('mk-token')||''}catch(e){}
+  const h=body?{'content-type':'application/json'}:{};if(tok)h.authorization='Bearer '+tok;
+  const r=await fetch(API+path,{method:body?'POST':'GET',credentials:'include',headers:h,body:body?JSON.stringify(body):undefined});
   const j=await r.json().catch(()=>({}));
+  try{if(j.token)localStorage.setItem('mk-token',j.token);else if(r.status===401||path==='/api/auth/logout')localStorage.removeItem('mk-token')}catch(e){}
   if(!r.ok){const e=new Error(j.error||'Сервер недоступен, попробуйте позже');e.status=r.status;throw e}
   return j;
 }

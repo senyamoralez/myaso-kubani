@@ -1,0 +1,13 @@
+{
+  "name": "myaso-kubani-worker",
+  "private": true,
+  "description": "Бот заказов и личный кабинет на Cloudflare Workers",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node test.js && cd ../bot && npm run test:worker"
+  },
+  "devDependencies": {
+    "wrangler": "^4.152.0"
+  }
+}

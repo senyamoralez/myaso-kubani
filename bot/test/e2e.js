@@ -1,7 +1,7 @@
 // Сквозной тест: поддельный Telegram API + реальный server.js
 'use strict';
 const http = require('node:http');
-const { spawn } = require('node:child_process');
+const { startServer } = require('./target');
 const path = require('node:path');
 const fs = require('node:fs');
 const assert = require('node:assert');
@@ -9,7 +9,7 @@ const assert = require('node:assert');
 const STAFF = -1001234567890, CUSTOMER = 555001;
 const sent = []; const edits = []; const answers = [];
 let queue = []; let waiters = []; let upd = 1; let msgId = 100;
-function push(u) { u.update_id = upd++; queue.push(u); waiters.splice(0).forEach(w => w()); }
+function push(u) { u.update_id = upd++; if (srv.hook) return srv.hook(u); queue.push(u); waiters.splice(0).forEach(w => w()); }
 
 const mock = http.createServer((req, res) => {
   let b = ''; req.on('data', c => b += c); req.on('end', async () => {
@@ -32,9 +32,7 @@ const mock = http.createServer((req, res) => {
 }).listen(9101);
 
 const dataDir = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'lavka-'));
-const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-  env: { ...process.env, BOT_TOKEN: 'TEST', STAFF_CHAT_ID: String(STAFF), TG_API: 'http://127.0.0.1:9101', PORT: '9102', DATA_DIR: dataDir, CATALOG: path.join(__dirname, '..', 'catalog.json') },
-  stdio: ['ignore', 'pipe', 'pipe'] });
+const srv = startServer(9102, { BOT_TOKEN: 'TEST', STAFF_CHAT_ID: String(STAFF), TG_API: 'http://127.0.0.1:9101', PORT: '9102', DATA_DIR: dataDir, CATALOG: path.join(__dirname, '..', 'catalog.json') });
 let log = ''; srv.stdout.on('data', d => log += d); srv.stderr.on('data', d => log += d);
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const api = async (p, body) => { const r = await fetch('http://127.0.0.1:9102' + p, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}); return { code: r.status, j: await r.json() }; };
@@ -44,7 +42,7 @@ let staffMsg;
 
 (async () => {
   try {
-    await wait(700);
+    await srv.ready; await wait(300);
     let h = await api('/health'); assert.equal(h.j.bot, 'lavka_test_bot');
 
     // 1. bad orders rejected

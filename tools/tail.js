@@ -115,7 +115,8 @@ function renderDrawer(){
   </form>`;
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function drawQR(){const el=$('#qr');if(!el)return;if(order.qr){el.innerHTML=`<img src="${order.qr}" alt="QR-код для оплаты заказа № ${order.no}">`;return}const txt='ДЕМО · Мясо Кубани и стейки · Заказ № '+order.no+' · '+Math.round(order.total)+' руб.';
+function drawQR(){const el=$('#qr');if(!el)return;if(order.qr){el.innerHTML=`<img src="${order.qr}" alt="QR-код для оплаты заказа № ${order.no}">`;return}
+  if(API){el.innerHTML='<span class="mono" style="color:#6C5B51;text-align:center;font-size:11px;line-height:1.4">QR-код<br>уточните<br>по телефону<br>+7 926 244-37-37</span>';return}const txt='ДЕМО · Мясо Кубани и стейки · Заказ № '+order.no+' · '+Math.round(order.total)+' руб.';
   if(window.QRCode){try{new QRCode(el,{text:txt,width:132,height:132,colorDark:'#1C1412',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});return}catch(e){}}
   el.innerHTML='<span class="mono" style="color:#6C5B51;text-align:center">QR-код<br>СБП</span>'}
 function openCart(){lastF=document.activeElement;if(stage==='sent')stage='cart';renderDrawer();drawer.hidden=false;scrim.hidden=false;document.documentElement.style.overflow='hidden';$('#cartClose').focus()}

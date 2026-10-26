@@ -1,0 +1,35 @@
+# Cloudflare Worker: сервер заказов, личный кабинет и Telegram-бот «Мясо Кубани и стейки».
+# Логика — в ../bot/core.js (та же, что и для обычного сервера).
+# Секрет BOT_TOKEN задаётся в панели Cloudflare (Settings → Variables and Secrets), не здесь.
+name = "myaso-kubani"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "SHOP"
+class_name = "Shop"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Shop"]
+
+# Итоги дня, бонусы на день рождения, уборка старых сессий
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+ALLOWED_ORIGIN = "http://lidmasterapp.ru,https://lidmasterapp.ru,https://senyamoralez.github.io"
+SHOP_NAME = "Мясо Кубани и стейки"
+SHOP_PHONE = "+7 926 244-37-37"
+PICKUP_ADDRESS = "Таллинская, 7, ТЦ «Московская ярмарка», 1 этаж"
+DELIVERY_FEE = "500"
+FREE_DELIVERY_FROM = "5000"
+PAY_NOTE = "Оплата по QR-коду СБП на счёт магазина. В назначении платежа укажите номер заказа."
+DAILY_SUMMARY_AT = "21:00"
+WELCOME_BONUS = "300"
+BIRTHDAY_BONUS = "1000"
+MAX_BONUS_SHARE = "0.3"
+# Рабочий чат назначается командой /staff в группе сотрудников. Можно задать и здесь.
+STAFF_CHAT_ID = ""
