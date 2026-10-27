@@ -814,6 +814,33 @@ body::before{background:#0E0B0A}
 .err{color:#B23A3F}
 .wheel .pic img{filter:drop-shadow(0 30px 30px rgba(60,40,30,.28))}
 .hdr,.hdr.solid{background:rgba(14,11,10,.86);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);border-color:var(--line)}
+.ftr{background:#0E0B0A}
+
+/* ============ PHONE POLISH ============ */
+@media (max-width:620px){
+  :root{--fade:56px}
+  .ps{padding-block:calc(var(--fade) + 8px) calc(var(--fade) + 4px)}
+  .cuts,.chs,.proc{padding-block:52px}
+  .inst,.proof{padding-block:60px 52px}
+  .cta .wrap{padding-block:56px}
+  /* плитки категорий: аккуратная сетка без обрезанных подписей */
+  .tiles{grid-auto-rows:clamp(118px,34vw,170px);gap:8px}
+  .tile.t-steaks{grid-row:span 1}
+  .tile:last-child:nth-child(even){grid-column:span 2}
+  .tile .tt{left:12px;right:12px;bottom:10px;flex-direction:column;align-items:flex-start;gap:3px}
+  .tile b{font-size:1.45rem;line-height:1.02}
+  .tile.t-steaks b{font-size:2.1rem}
+  .tile .mono{font-size:9.5px;opacity:.85}
+  /* термометр компактнее */
+  .steak-wrap{max-width:210px}
+  /* шаги доставки: без пустой простыни */
+  .panel{min-height:0;grid-template-columns:1fr}
+  .panel .ph{aspect-ratio:16/10}
+  .panel .tx{gap:10px}
+  .panel .big{font-size:3rem}
+  .facts{margin-top:28px}
+  .ftr{padding-block:26px}
+}
 
 /* ============ Compact phone layout ============ */
 @media (max-width:620px){
