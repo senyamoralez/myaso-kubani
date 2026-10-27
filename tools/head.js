@@ -34,5 +34,5 @@ const subPrice=p=>p.unit==='pc'&&p.w&&p.pp==null?'≈ '+Math.round(p.w*1000)+' �
 /* ---------- cart state ---------- */
 let cart={};try{cart=JSON.parse(localStorage.getItem('mk3-cart')||'{}')||{}}catch(e){cart={}}
 const save=()=>{try{localStorage.setItem('mk3-cart',JSON.stringify(cart))}catch(e){}};
-function addToCart(id,q){const p=ALL[id];if(!p||(p.price==null&&p.pp==null))return;cart[id]=Math.round(((cart[id]||0)+(q||minQ(p)))*100)/100;save();renderCount(true);toast(p.name+' — в корзине')}
+function addToCart(id,q){const p=ALL[id];if(!p||(p.price==null&&p.pp==null)||p.stock==='out'||p.hidden)return;cart[id]=Math.round(((cart[id]||0)+(q||minQ(p)))*100)/100;save();renderCount(true);toast(p.name+' — в корзине')}
 function renderCount(pop){const c=$('#cartCount');c.textContent=Object.keys(cart).filter(k=>ALL[k]).length;if(pop){c.classList.add('pop');setTimeout(()=>c.classList.remove('pop'),350)}}

@@ -30,11 +30,14 @@ function configFromEnv(E) {
     hours: E.SHOP_HOURS || 'Вт–Вс, 10:00–20:00',
     whatsapp: E.WHATSAPP_URL || 'https://wa.me/79262443737',
     vk: E.VK_URL || 'https://vk.ru/steykribaykupit',
+    adminLogin: (E.ADMIN_LOGIN || 'admin').toLowerCase(),
+    adminHash: E.ADMIN_HASH || '',
     welcomePhoto: E.WELCOME_PHOTO != null ? E.WELCOME_PHOTO : (E.SITE_URL || 'http://lidmasterapp.ru/myaso-kubani/') + 'img/hero-ribeye.jpg',
   };
 }
 const emptyDb = () => ({ seq: 1000, orders: {}, pending: {}, offset: 0, lastSummary: '', users: {}, sessions: {}, logins: {}, lastBirthday: '',
-  secret: '', staffChat: '', qr: null, webhookUrl: '', custWait: {} });
+  secret: '', staffChat: '', qr: null, webhookUrl: '', custWait: {},
+  ov: {}, admins: {}, asess: {}, alog: [] });
 
 /**
  * opts: { C, db, save(), catalog: items[], crypto, Buffer, readQrFile?(): {bytes,type}|null, log? }
@@ -48,6 +51,10 @@ function createShop(opts) {
   /* ---------- catalog ---------- */
   const CATALOG = {};
   for (const p of (opts.catalog && (opts.catalog.items || opts.catalog)) || []) CATALOG[p.id] = p;
+  // Правки из панели управления (цены, наличие, метки) лежат в db.ov и накладываются на каталог.
+  for (const k of ['ov', 'admins', 'asess']) if (!db[k] || typeof db[k] !== 'object') db[k] = {};
+  if (!Array.isArray(db.alog)) db.alog = [];
+  const item = id => { const b = CATALOG[id]; if (!b) return null; const o = db.ov[id]; return o ? Object.assign({}, b, o) : b; };
   const piece = p => (p.pp != null ? p.pp : p.price * (p.w || 1));
   const lineSum = (p, q) => (p.unit === 'kg' ? p.price * q : piece(p) * q);
   const qLabel = (p, q) => (p.unit === 'kg' ? `${String(+q.toFixed(2)).replace('.', ',')} кг` : `${q} шт`);
@@ -820,9 +827,10 @@ function createShop(opts) {
     if (!Array.isArray(b.items) || !b.items.length || b.items.length > 60) throw httpErr(400, 'Корзина пуста');
     const items = [];
     for (const it of b.items) {
-      const p = CATALOG[it.id], q = +it.q;
-      if (!p) throw httpErr(400, 'Товар не найден: ' + str(it.id, 40));
-      if (p.price == null) throw httpErr(400, 'Цену уточняем по телефону: ' + p.name);
+      const p = item(it.id), q = +it.q;
+      if (!p || p.hidden) throw httpErr(400, 'Товар не найден: ' + str(p ? p.name : it.id, 60));
+      if (p.price == null && p.pp == null) throw httpErr(400, 'Цену уточняем по телефону: ' + p.name);
+      if (p.stock === 'out') throw httpErr(400, 'Нет в наличии: ' + p.name + '. Уберите его из корзины.');
       if (!(q > 0 && q <= 50)) throw httpErr(400, 'Неверное количество: ' + p.name);
       const qq = p.unit === 'kg' ? Math.round(q * 100) / 100 : Math.round(q);
       items.push({ id: p.id, name: p.name, qty: qLabel(p, qq), q: qq, sum: Math.round(lineSum(p, qq)) });
@@ -855,6 +863,138 @@ function createShop(opts) {
     payQr: db.qr || (opts.readQrFile && opts.readQrFile()) ? '/pay-qr' + (db.qr ? '?v=' + Date.parse(db.qr.at) : '') : null, payNote: C.payNote,
     botLink: customerChat(o) ? null : ME ? `https://t.me/${ME.username}?start=o${o.no}_${o.token}` : null,
     telegramLinked: !!customerChat(o) });
+
+  /* ---------- панель управления ---------- */
+  const ITER = 20000;
+  function hashPw(pw, salt) {
+    salt = salt || crypto.randomBytes(16).toString('hex');
+    return `pbkdf2$${ITER}$${salt}$${crypto.pbkdf2Sync(String(pw), salt, ITER, 32, 'sha256').toString('hex')}`;
+  }
+  function checkPw(pw, stored) {
+    const m = String(stored || '').match(/^pbkdf2\$(\d+)\$([0-9a-f]+)\$([0-9a-f]{64})$/);
+    if (!m) return false;
+    const h = crypto.pbkdf2Sync(String(pw), m[2], +m[1], 32, 'sha256');
+    const want = Buffer.from(m[3], 'hex');
+    return h.length === want.length && crypto.timingSafeEqual(h, want);
+  }
+  // Владелец задаётся в настройках сервера (ADMIN_LOGIN, ADMIN_HASH), пока не сменит пароль в панели.
+  const adminOf = login => db.admins[login] || (login === C.adminLogin && C.adminHash ? { hash: C.adminHash, role: 'owner', name: 'Владелец' } : null);
+  const ROLE = { owner: 'Владелец', staff: 'Сотрудник' };
+  function adminSess(req) {
+    const m = (req.headers.authorization || '').match(/^Admin\s+([A-Za-z0-9_-]{30,})$/);
+    if (!m) return null;
+    const h = sha('adm:' + m[1]), s = db.asess[h];
+    if (!s) return null;
+    const a = adminOf(s.login);
+    if (!a || Date.now() - Date.parse(s.seen) > 30 * 86400e3) { delete db.asess[h]; save(); return null; }
+    if (Date.now() - Date.parse(s.seen) > 3600e3) { s.seen = iso(); save(); }
+    return { hash: h, login: s.login, a };
+  }
+  const needAdmin = req => { const s = adminSess(req); if (!s) throw httpErr(401, 'Войдите в панель управления'); return s; };
+  function adminLogin(b, ip) {
+    if (hit('adm:' + ip, 8, 15 * 60e3) || hit('adm:all', 60, 3600e3)) throw httpErr(429, 'Слишком много попыток. Подождите 15 минут.');
+    const login = str(b.login, 40).toLowerCase(), a = adminOf(login);
+    if (!a || !checkPw(String(b.password || ''), a.hash)) throw httpErr(401, 'Неверный логин или пароль');
+    const token = crypto.randomBytes(24).toString('base64url');
+    for (const [h, x] of Object.entries(db.asess)) if (Date.now() - Date.parse(x.seen) > 30 * 86400e3) delete db.asess[h];
+    db.asess[sha('adm:' + token)] = { login, at: iso(), seen: iso() };
+    save();
+    return { token, me: { login, name: a.name, role: a.role } };
+  }
+  const priceOf = p => (p.unit === 'pc' && p.pp != null ? p.pp : p.price);
+  const priceKey = p => (p.unit === 'pc' && CATALOG[p.id].pp != null ? 'pp' : 'price');
+  const money = v => (v == null ? 'по запросу' : rub(v));
+  const BADGE = { '': '', hit: 'Хит', new: 'Новинка', sale: 'Скидка' };
+  function numOrNull(v, what) {
+    if (v === null || v === '') return null;
+    const n = Math.round(+v);
+    if (!(n >= 1 && n <= 5e6)) throw httpErr(400, 'Неверная ' + what);
+    return n;
+  }
+  async function adminSave(sess, b) {
+    const ch = b && b.changes;
+    if (!ch || typeof ch !== 'object' || Array.isArray(ch)) throw httpErr(400, 'Нет изменений');
+    const ids = Object.keys(ch);
+    if (!ids.length || ids.length > 500) throw httpErr(400, 'Нет изменений');
+    const lines = [], who = sess.a.name || sess.login;
+    for (const id of ids) {
+      const base = CATALOG[id];
+      if (!base) throw httpErr(400, 'Товар не найден: ' + str(id, 60));
+      const c = ch[id] || {}, cur = item(id), next = Object.assign({}, db.ov[id] || {}), what = [];
+      if ('price' in c) {
+        const k = priceKey(base), v = numOrNull(c.price, 'цена: ' + base.name);
+        if (v !== priceOf(cur)) what.push(`цена ${money(priceOf(cur))} → ${money(v)}`);
+        next[k] = v;
+      }
+      if ('stock' in c) {
+        if (!['in', 'out'].includes(c.stock)) throw httpErr(400, 'Неверное наличие');
+        if ((cur.stock || 'in') !== c.stock) what.push(c.stock === 'out' ? 'нет в наличии' : 'в наличии');
+        next.stock = c.stock;
+      }
+      if ('hidden' in c) {
+        const v = !!c.hidden;
+        if (!!cur.hidden !== v) what.push(v ? 'скрыт с сайта' : 'снова на сайте');
+        next.hidden = v;
+      }
+      if ('badge' in c) {
+        const v = String(c.badge || '');
+        if (!(v in BADGE)) throw httpErr(400, 'Неверная метка');
+        if ((cur.badge || '') !== v) what.push(v ? 'метка «' + BADGE[v] + '»' : 'без метки');
+        next.badge = v;
+      }
+      if ('old' in c) {
+        const v = numOrNull(c.old, 'старая цена: ' + base.name);
+        if ((cur.old || null) !== v) what.push(v ? 'старая цена ' + rub(v) : 'без старой цены');
+        next.old = v;
+      }
+      // в правке храним только то, что отличается от исходного каталога
+      for (const [k, def] of [['price', base.price], ['pp', base.pp], ['stock', base.stock || 'in'], ['hidden', !!base.hidden], ['badge', base.badge || ''], ['old', base.old || null]])
+        if (k in next && (next[k] === def || (next[k] == null && def == null))) delete next[k];
+      if (Object.keys(next).length) db.ov[id] = next; else delete db.ov[id];
+      if (what.length) { db.alog.unshift({ at: iso(), by: who, id, name: base.name, text: what.join(', ') }); lines.push(`• ${base.name}: ${what.join(', ')}`); }
+    }
+    db.alog = db.alog.slice(0, 300);
+    db.ovAt = iso();
+    save();
+    if (lines.length && staff()) {
+      const more = lines.length > 15 ? `\n…и ещё ${lines.length - 15}` : '';
+      await tg('sendMessage', { chat_id: staff(), text: `🛠 ${esc(who)} изменил каталог:\n${esc(lines.slice(0, 15).join('\n'))}${more}`, parse_mode: 'HTML', disable_notification: true }).catch(() => {});
+    }
+    return { ok: true, changed: lines.length, ov: db.ov };
+  }
+  function adminState(sess) {
+    const users = sess.a.role === 'owner'
+      ? Object.entries(Object.assign(C.adminHash && !db.admins[C.adminLogin] ? { [C.adminLogin]: { role: 'owner', name: 'Владелец' } } : {}, db.admins))
+        .map(([login, a]) => ({ login, name: a.name, role: a.role, roleName: ROLE[a.role] })) : null;
+    return { me: { login: sess.login, name: sess.a.name, role: sess.a.role }, ov: db.ov, log: db.alog.slice(0, 150), users };
+  }
+  function adminPassword(sess, b) {
+    if (!checkPw(String(b.old || ''), sess.a.hash)) throw httpErr(400, 'Старый пароль неверный');
+    const pw = String(b.password || '');
+    if (pw.length < 8) throw httpErr(400, 'Новый пароль — не короче 8 символов');
+    db.admins[sess.login] = Object.assign({}, sess.a, { hash: hashPw(pw) });
+    for (const [h, x] of Object.entries(db.asess)) if (x.login === sess.login && h !== sess.hash) delete db.asess[h];
+    save();
+    return { ok: true };
+  }
+  function adminUsers(sess, b) {
+    if (sess.a.role !== 'owner') throw httpErr(403, 'Доступами управляет владелец');
+    const login = str(b.login, 40).toLowerCase();
+    if (!/^[a-z0-9._-]{3,40}$/.test(login)) throw httpErr(400, 'Логин: латиница, цифры, точка, дефис, от 3 символов');
+    if (b.action === 'add') {
+      if (adminOf(login)) throw httpErr(400, 'Такой логин уже есть');
+      const pw = String(b.password || '');
+      if (pw.length < 8) throw httpErr(400, 'Пароль — не короче 8 символов');
+      db.admins[login] = { hash: hashPw(pw), role: b.role === 'owner' ? 'owner' : 'staff', name: str(b.name, 60) || login, at: iso(), by: sess.login };
+    } else if (b.action === 'del') {
+      if (login === sess.login) throw httpErr(400, 'Себя удалить нельзя');
+      if (login === C.adminLogin) throw httpErr(400, 'Главного владельца удалить нельзя');
+      delete db.admins[login];
+      for (const [h, x] of Object.entries(db.asess)) if (x.login === login) delete db.asess[h];
+    } else throw httpErr(400, 'Неизвестное действие');
+    save();
+    return adminState(sess);
+  }
 
   /* ---------- HTTP ---------- */
   function corsHeaders(req) {
@@ -918,6 +1058,19 @@ function createShop(opts) {
         const o = await createOrder(parseBody(req), sessionOf(req));
         return reply(201, publicOrder(o));
       }
+      if (P === '/api/catalog') return reply(200, { ov: db.ov, at: db.ovAt || null });
+      if (P === '/api/admin/login' && M === 'POST') return reply(200, adminLogin(parseBody(req), ip));
+      if (P.startsWith('/api/admin/')) {
+        const s = needAdmin(req);
+        if (P === '/api/admin/state') return reply(200, adminState(s));
+        if (M !== 'POST') return reply(405, { error: 'POST' });
+        const b = parseBody(req);
+        if (P === '/api/admin/save') return reply(200, await adminSave(s, b));
+        if (P === '/api/admin/password') return reply(200, adminPassword(s, b));
+        if (P === '/api/admin/users') return reply(200, adminUsers(s, b));
+        if (P === '/api/admin/logout') { delete db.asess[s.hash]; save(); return reply(200, { ok: true }); }
+        return reply(404, { error: 'not found' });
+      }
       const m = P.match(/^\/api\/orders\/(\d+)(\/paid)?$/);
       if (m) {
         const o = db.orders[m[1]];
@@ -939,7 +1092,7 @@ function createShop(opts) {
     }
   }
 
-  return { handle, onUpdate, daily, init, setupBot, tg, sha, get me() { return ME; }, staff };
+  return { handle, onUpdate, daily, init, setupBot, tg, sha, hashPw, get me() { return ME; }, staff };
 }
 
 module.exports = { createShop, configFromEnv, emptyDb };

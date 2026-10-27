@@ -17,7 +17,7 @@ def cut(a, b, new, include_b=False):
     s = s[:i] + new + s[j:]
 
 # CSS
-rep('/* ============ Compact phone layout ============ */', open(T + '/cat.css', encoding='utf-8').read() + open(T + '/account.css', encoding='utf-8').read() + '\n/* ============ Compact phone layout ============ */')
+rep('/* ============ Compact phone layout ============ */', open(T + '/cat.css', encoding='utf-8').read() + open(T + '/account.css', encoding='utf-8').read() + open(T + '/admin.css', encoding='utf-8').read() + '\n/* ============ Compact phone layout ============ */')
 
 # header nav -> categories
 cut('<nav class="nav" aria-label="Разделы">', '</nav>', '<nav class="nav" aria-label="Каталог">\n      <a href="#meat">Мясо</a><a href="#steaks">Стейки</a><a href="#cheese">Сыры</a><a href="#dairy">Молочка</a><a href="#italian">Итальянские сыры</a><a href="#sausage">Колбаса</a><a href="#fish">Рыба и икра</a><a href="#ready">Полуфабрикаты</a>\n    ', include_b=False)
@@ -43,11 +43,11 @@ rep('<!-- 2. PROBLEM / SOLUTION -->', '''<!-- CATALOG INDEX -->
 </section>
 
 <!-- 2. PROBLEM / SOLUTION -->''')
-rep('</section>\n</main>', '</section>\n</div>\n<div class="view" id="catView" hidden></div>\n<div class="view" id="staffView" hidden></div>\n<div class="view" id="accView" hidden></div>\n<div class="view" id="legalView" hidden></div>\n</main>')
+rep('</section>\n</main>', '</section>\n</div>\n<div class="view" id="catView" hidden></div>\n<div class="view" id="staffView" hidden></div>\n<div class="view" id="accView" hidden></div>\n<div class="view" id="legalView" hidden></div>\n<div class="view" id="adminView" hidden></div>\n</main>')
 rep('<a class="btn btn-fill" href="#cuts">Выбрать отруб <span class="ar">→</span></a>', '<a class="btn btn-fill" href="#steaks">Выбрать стейк <span class="ar">→</span></a>')
 rep('<a class="btn btn-ink" href="#cuts">К отрубам <span class="ar">→</span></a>', '<a class="btn btn-ink" href="#catalog">В каталог <span class="ar">→</span></a>')
 rep('<nav aria-label="Ссылки">', '<nav aria-label="Ссылки"><a href="#staff">Бот для сотрудников · демо</a>')
-rep('<span>© 2026 · Цены на сайте не являются публичной офертой</span>', '<span>© 2026 · Цены на сайте не являются публичной офертой</span>\n    <nav class="ftr-legal" aria-label="Документы"><a href="#privacy">Политика конфиденциальности</a><a href="#consent">Согласие на обработку персональных данных</a></nav>')
+rep('<span>© 2026 · Цены на сайте не являются публичной офертой</span>', '<span>© 2026 · Цены на сайте не являются публичной офертой</span>\n    <nav class="ftr-legal" aria-label="Документы"><a href="#privacy">Политика конфиденциальности</a><a href="#consent">Согласие на обработку персональных данных</a><a href="#admin">Вход для сотрудников</a></nav>')
 rep('Оплата картой, по СБП или наличными.', 'Заказ оплачен на сайте, курьеру ничего платить не нужно.') if 'Оплата картой, по СБП или наличными.' in s else None
 
 # script
@@ -59,7 +59,7 @@ done = block('/* ---------- 3b. doneness ---------- */', '/* ---------- 3c. chee
 proc_offer = block('/* ---------- 5. process ---------- */', '/* ---------- cart drawer ---------- */')
 cat = json.load(open(T + '/catalog.json', encoding='utf-8'))
 head = open(T + '/head.js', encoding='utf-8').read().replace('/*CATALOG*/{"items":[],"covers":{}}/*END*/', json.dumps(cat, ensure_ascii=False))
-tail = open(T + '/legal.js', encoding='utf-8').read() + '\n' + open(T + '/account.js', encoding='utf-8').read() + '\n' + open(T + '/tail.js', encoding='utf-8').read()
+tail = open(T + '/legal.js', encoding='utf-8').read() + '\n' + open(T + '/account.js', encoding='utf-8').read() + '\n' + open(T + '/admin.js', encoding='utf-8').read() + '\n' + open(T + '/tail.js', encoding='utf-8').read()
 new_js = '<!-- Адрес сервера заказов. Пусто = демо-режим без отправки. Пример: https://api.myaso-kubani.ru -->\n<script>window.SHOP_API="https://myaso-kubani.senyamoralez.workers.dev";</script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>\n<script>\n' + head + '\n' + hero_hdr + '\n' + done + '\n' + proc_offer + '\n' + tail + '\n'
 new_js = new_js.replace("$('#menu').innerHTML=", "if($('#menu'))$('#menu').innerHTML=")
 s = s.replace(js_old, new_js)

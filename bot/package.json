@@ -6,8 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/e2e.js && node test/account.js",
-    "test:worker": "TARGET=worker node test/e2e.js && TARGET=worker node test/account.js"
+    "test": "node test/e2e.js && node test/account.js && node test/admin.js",
+    "test:worker": "TARGET=worker node test/e2e.js && TARGET=worker node test/account.js && TARGET=worker node test/admin.js"
   },
   "engines": {
     "node": ">=18"

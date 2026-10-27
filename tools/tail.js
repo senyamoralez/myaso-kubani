@@ -1,18 +1,19 @@
 /* ---------- home: category tiles ---------- */
 const count=c=>DATA.items.filter(p=>p.cat===c).length;
 const plural=n=>{const a=n%10,b=n%100;return n+' '+(a===1&&b!==11?'позиция':a>=2&&a<=4&&(b<12||b>14)?'позиции':'позиций')};
-$('#tiles').innerHTML=ORDER.map(c=>`<a class="tile t-${c}" href="#${c}">${DATA.covers[c]?`<img src="${DATA.covers[c]}" alt="" loading="lazy">`:''}<span class="tt"><b>${CATS[c].name}</b><span class="mono num">${count(c)?plural(count(c)):'скоро'}</span></span></a>`).join('');
+function renderTiles(){$('#tiles').innerHTML=ORDER.map(c=>`<a class="tile t-${c}" href="#${c}">${DATA.covers[c]?`<img src="${DATA.covers[c]}" alt="" loading="lazy">`:''}<span class="tt"><b>${CATS[c].name}</b><span class="mono num">${count(c)?plural(count(c)):'скоро'}</span></span></a>`).join('')}
+renderTiles();
 
 /* ---------- category view ---------- */
 const plus='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v12M0 6h12" stroke="currentColor" stroke-width="1.4"/></svg>';
 let curCat=null,curSub='all';
 function card(p){return `<article class="pc" data-sub="${p.sub||''}">
- <div class="pc-ph${p.fit==='cover'?' cover':''}">${p.img?`<img src="${p.img}" alt="${p.name}" loading="lazy">`:''}${p.tag?`<span class="tag">${p.tag}</span>`:''}</div>
+ <div class="pc-ph${p.fit==='cover'?' cover':''}">${p.img?`<img src="${p.img}" alt="${p.name}" loading="lazy">`:''}${p.tag?`<span class="tag">${p.tag}</span>`:''}${p.badge&&BADGES[p.badge]?`<span class="badge b-${p.badge}">${BADGES[p.badge]}</span>`:''}</div>
  <div class="pc-b">
   <span class="pc-k mono">${[p.subName,p.src].filter(Boolean).join(' · ')}</span>
   <h3>${p.name}</h3>
   ${p.note?`<p class="pc-n">${p.note}</p>`:''}
-  ${p.price==null?`<div class="pc-f"><span class="pc-p">Цена по запросу<small>уточним наличие и цену</small></span><a class="pc-add" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Подскажите цену: '+p.name)}" target="_blank" rel="noopener"><span class="lbl">Узнать цену</span></a></div>`:`<div class="pc-f"><span class="pc-p num">${unitPrice(p)}${subPrice(p)?`<small>${subPrice(p)}</small>`:''}</span><button class="pc-add" data-add="${p.id}">${plus}<span class="lbl">В корзину</span></button></div>`}
+  ${p.price==null?`<div class="pc-f"><span class="pc-p">Цена по запросу<small>уточним наличие и цену</small></span><a class="pc-add" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Подскажите цену: '+p.name)}" target="_blank" rel="noopener"><span class="lbl">Узнать цену</span></a></div>`:p.stock==='out'?`<div class="pc-f pc-out"><span class="pc-p num">${unitPrice(p)}<small>нет в наличии</small></span><a class="pc-add" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Когда будет в наличии: '+p.name+'?')}" target="_blank" rel="noopener"><span class="lbl">Узнать о поступлении</span></a></div>`:`<div class="pc-f"><span class="pc-p num">${p.old?`<s class="pc-old">${rub(p.old)}</s>`:''}${unitPrice(p)}${subPrice(p)?`<small>${subPrice(p)}</small>`:''}</span><button class="pc-add" data-add="${p.id}">${plus}<span class="lbl">В корзину</span></button></div>`}
  </div></article>`}
 function renderCat(c){
   const m=CATS[c],items=DATA.items.filter(p=>p.cat===c);curCat=c;curSub='all';
@@ -49,11 +50,12 @@ document.addEventListener('click',e=>{
 });
 
 /* ---------- router ---------- */
-const home=$('#home'),catView=$('#catView'),staffView=$('#staffView'),accView=$('#accView'),legalView=$('#legalView');
+const home=$('#home'),catView=$('#catView'),staffView=$('#staffView'),accView=$('#accView'),legalView=$('#legalView'),adminView=$('#adminView');
 let lastView='home';
 function route(){
   const h=decodeURIComponent(location.hash.slice(1));
-  accView.hidden=h!=='account';legalView.hidden=!(h==='privacy'||h==='consent');
+  accView.hidden=h!=='account';adminView.hidden=h!=='admin';
+  if(h==='admin'){home.hidden=true;catView.hidden=true;staffView.hidden=true;legalView.hidden=true;renderAdmin();scrollTo(0,0);lastView='admin';document.title='Управление — Мясо Кубани и стейки';return}legalView.hidden=!(h==='privacy'||h==='consent');
   if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Мясо Кубани и стейки'}
   else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
   else if(h==='search'||h.startsWith('search=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderSearch(h.slice(7));scrollTo(0,0);lastView='cat';document.title='Поиск — Мясо Кубани и стейки'}
