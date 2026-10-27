@@ -842,6 +842,40 @@ body::before{background:#0E0B0A}
   .ftr{padding-block:26px}
 }
 
+/* ============ PHONE COMPACT (28.10) ============ */
+/* первый экран целиком тёмный, дальше всё плотнее */
+@media (max-width:620px){
+  .hero{min-height:100vh;min-height:100svh}
+  .hero-ph{flex:1 1 auto;aspect-ratio:auto;min-height:58vw}
+  .cats{padding-top:40px;padding-bottom:36px}
+  .ps,.inst,.proof,.proc{padding-block:40px}
+  .cta .wrap{padding-block:40px}
+  .tiles{grid-auto-rows:clamp(96px,28vw,132px)}
+  .ps-fig{margin-top:22px}
+  .ps-fig .frame{aspect-ratio:16/10}
+  .ps-fig figcaption{margin-top:8px}
+  .ledger{margin-top:18px}
+  .lrow{grid-template-columns:1fr 1fr;gap:4px 14px;padding:12px 0}
+  .lrow .k{grid-column:1/-1;font-size:1.2rem}
+  .lrow .was{font-size:12.5px}
+  .lrow .now{font-size:13.5px;line-height:1.4}
+  .steak-wrap{max-width:150px}
+  .inst-tx{gap:12px}
+  .advice{font-size:13.5px}
+  .cite{gap:12px}
+  .cite li{padding:10px 0}
+  .facts{margin-top:28px}
+  .fact{padding-top:16px;padding-bottom:14px;gap:6px}
+  .fact b{font-size:2.8rem}
+  .fact span{font-size:12.5px}
+  .proc-head{margin-bottom:0}
+  .steps{grid-template-columns:1fr 1fr;column-gap:12px}
+  .stp{grid-template-columns:1fr;gap:2px;padding:10px 0}
+  .stp .ti{font-size:1.15rem}
+  .panel .ph{aspect-ratio:16/8}
+  .panel .big{font-size:2.4rem}
+}
+
 /* ============ ADMIN PANEL (#admin) ============ */
 .badge{position:absolute;right:10px;top:10px;padding:5px 10px;border-radius:999px;font:600 11px/1 var(--f-body);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--blood-3)}
 .badge.b-new{background:#2D6A4F}.badge.b-hit{background:#9C7436}
