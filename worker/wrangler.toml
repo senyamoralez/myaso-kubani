@@ -40,5 +40,5 @@ MAX_BONUS_SHARE = "0.3"
 # Рабочий чат назначается командой /staff в группе сотрудников. Можно задать и здесь.
 STAFF_CHAT_ID = ""
 # Вход в панель управления сайта (#admin). Хранится только хеш пароля; сменить пароль можно в самой панели.
-ADMIN_LOGIN = "admin"
-ADMIN_HASH = "pbkdf2$20000$93879eabda3f6fe844f3d49edfe4485a$23570a88ceee73ae03f53fddfc5b16273e0f6e0746e0bcbc0e6d3c542ce3c110"
+ADMIN_LOGIN = "89011020737"
+ADMIN_HASH = "pbkdf2$20000$f012c46b97579b599ec7bddcf2ebbcdb$2ce942fc1bc26577b5ddac3b14bccfbf5a4651a838ab1d0781cd9569c1b1ea3e"
