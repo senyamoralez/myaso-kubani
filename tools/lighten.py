@@ -35,11 +35,15 @@ def lighten(src, session, S=900, board=False):
     cut = remove(im, session=session, post_process_mask=True)
     if board:
         cut = drop_board(im, cut)
+    return compose(cut, S, abs(hash(src)) % 1000)
+
+def compose(cut, S=900, seed=1):
+    """Вырезанный товар (RGBA) → на светлый фон с мягкой тенью."""
     mask = cut.split()[3].point(lambda v: 255 if v > 60 else 0)
     c = cut.crop(mask.getbbox())
     sc = min(S * .88 / c.width, S * .72 / c.height)
     c = c.resize((int(c.width * sc), int(c.height * sc)), Image.LANCZOS)
-    B = background(S, abs(hash(src)) % 1000).convert('RGBA')
+    B = background(S, seed).convert('RGBA')
     px, py = (S - c.width) // 2, (S - c.height) // 2 + 20
     sh = Image.new('L', (S, S), 0); sh.paste(c.split()[3], (px + 12, py + 30))
     sh = sh.filter(ImageFilter.GaussianBlur(28)).point(lambda v: int(v * .4))

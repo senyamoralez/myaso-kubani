@@ -12,7 +12,7 @@ function card(p){return `<article class="pc" data-sub="${p.sub||''}">
   <span class="pc-k mono">${[p.subName,p.src].filter(Boolean).join(' · ')}</span>
   <h3>${p.name}</h3>
   ${p.note?`<p class="pc-n">${p.note}</p>`:''}
-  <div class="pc-f"><span class="pc-p num">${unitPrice(p)}${subPrice(p)?`<small>${subPrice(p)}</small>`:''}</span><button class="pc-add" data-add="${p.id}">${plus}<span class="lbl">В корзину</span></button></div>
+  ${p.price==null?`<div class="pc-f"><span class="pc-p">Цена по запросу<small>уточним наличие и цену</small></span><a class="pc-add" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Подскажите цену: '+p.name)}" target="_blank" rel="noopener"><span class="lbl">Узнать цену</span></a></div>`:`<div class="pc-f"><span class="pc-p num">${unitPrice(p)}${subPrice(p)?`<small>${subPrice(p)}</small>`:''}</span><button class="pc-add" data-add="${p.id}">${plus}<span class="lbl">В корзину</span></button></div>`}
  </div></article>`}
 function renderCat(c){
   const m=CATS[c],items=DATA.items.filter(p=>p.cat===c);curCat=c;curSub='all';

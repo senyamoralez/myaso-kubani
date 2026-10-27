@@ -236,3 +236,4 @@ mark.todo{background:rgba(231,205,159,.16);color:var(--brass-2);box-shadow:inset
 #srchRes .pc{box-shadow:0 0 0 1px var(--line)}
 @media (max-width:440px){.hdr .wrap{gap:7px}.logo-txt em{display:none}.srch-btn,.acc-btn,.burger{width:38px;height:38px}.acc-btn{padding:0;justify-content:center}.cart-btn{height:38px}}
 .srch-hero{grid-template-columns:minmax(0,1fr)}
+a.pc-add{text-decoration:none;color:inherit}

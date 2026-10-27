@@ -822,6 +822,7 @@ function createShop(opts) {
     for (const it of b.items) {
       const p = CATALOG[it.id], q = +it.q;
       if (!p) throw httpErr(400, 'Товар не найден: ' + str(it.id, 40));
+      if (p.price == null) throw httpErr(400, 'Цену уточняем по телефону: ' + p.name);
       if (!(q > 0 && q <= 50)) throw httpErr(400, 'Неверное количество: ' + p.name);
       const qq = p.unit === 'kg' ? Math.round(q * 100) / 100 : Math.round(q);
       items.push({ id: p.id, name: p.name, qty: qLabel(p, qq), q: qq, sum: Math.round(lineSum(p, qq)) });
