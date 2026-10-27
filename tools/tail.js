@@ -56,6 +56,7 @@ function route(){
   accView.hidden=h!=='account';legalView.hidden=!(h==='privacy'||h==='consent');
   if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Мясо Кубани и стейки'}
   else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
+  else if(h==='search'||h.startsWith('search=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderSearch(h.slice(7));scrollTo(0,0);lastView='cat';document.title='Поиск — Мясо Кубани и стейки'}
   else if(CATS[h]){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderCat(h);scrollTo(0,0);lastView='cat';document.title=CATS[h].name+' — Мясо Кубани и стейки'}
   else if(h==='staff'){home.hidden=true;catView.hidden=true;staffView.hidden=false;renderStaff();scrollTo(0,0);lastView='staff';document.title='Бот для сотрудников — Мясо Кубани и стейки'}
   else{const was=lastView;home.hidden=false;catView.hidden=true;staffView.hidden=true;lastView='home';document.title='Мясо Кубани и стейки';
@@ -216,5 +217,74 @@ document.addEventListener('click',e=>{
 });
 
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,1800)}
+/* ---------- search ---------- */
+const SRCH_STOP=new Set(['и','с','в','для','на','из','по','без','от','до']);
+// стем → варианты написания в каталоге (латиница, уменьшительные формы)
+const SRCH_SYN={'риба':['ribeye','рибай'],'рибай':['ribeye'],'стрипл':['striploin','стриплойн'],'тибо':['t-bone','тибон'],'т-бо':['t-bone','тибон'],'вырез':['tenderloin','вырезк'],'миньо':['mignon','миньон'],'пикан':['пиканья','picanha'],'брискет':['brisket','брискет'],'грудин':['brisket','грудинк'],'чак':['chuck','чак'],'денвер':['denver'],'фланк':['flank'],'флэнк':['flank'],'шатобри':['chateaubriand','сhateaubriand'],'щек':['щечк','щёчк'],'щеч':['щечк'],'кост':['bone'],'ребр':['ребр','рёбр'],'реб':['ребр','рёбр'],'вагю':['вагю','wagyu'],'ваг':['вагю','wagyu'],'томаг':['томагавк','tomahawk'],'портерх':['портерхаус'],'клаб':['club','клаб'],'ковб':['cowboy'],'кауб':['cowboy'],'оссобу':['osso buco'],'оссо':['osso buco'],'фарш':['фарш'],'котлет':['котлет'],'телят':['телят'],'баран':['баран'],'ягн':['ягн','ягнят'],'утк':['утин','утк'],'утин':['утин'],'кур':['цыпл','курин'],'цыпл':['цыпл'],'икр':['икр'],'сыр':['сыры'],'колбас':['колбас','салями'],'масл':['масл'],'фуагр':['фуа-гра'],'фуа':['фуа-гра'],'шей':['шея','шеи','шей','neck'],'шея':['шея','шеи','neck'],'лопат':['лопатк','blade']};
+const QW='qwertyuiop[]asdfghjkl;\'zxcvbnm,.`',RU='йцукенгшщзхъфывапролджэячсмитьбюё';
+const srchNorm=s=>(s||'').toLowerCase().replace(/ё/g,'е');
+const srchStem=t=>t.length>=6?t.slice(0,-2):t.length>=4?t.slice(0,-1):t;
+const srchHay=p=>srchNorm([p.name,p.subName,p.note,p.src,p.tag,CATS[p.cat]&&CATS[p.cat].name].filter(Boolean).join(' ')).replace(/-/g,' ');
+function srchFind(q){
+  const toks=srchNorm(q).replace(/[«»"“”,.!?()]/g,' ').split(/\s+/).filter(t=>t&&!SRCH_STOP.has(t));
+  if(!toks.length)return [];
+  // слово подходит, если начинается с запроса и отличается только окончанием (кости → кость, но не Кострома)
+  const near=(w,x)=>w.startsWith(x)&&w.length-x.length<=3;
+  const res=[];
+  for(const p of DATA.items){
+    const hay=srchHay(p),words=hay.split(/[^a-zа-я0-9]+/).filter(Boolean),nameW=srchNorm(p.name).replace(/-/g,' ').split(/[^a-zа-я0-9]+/);
+    let score=0,ok=true;
+    for(const t of toks){
+      const st=srchStem(t),own=[t,st],syn=[];
+      for(const k in SRCH_SYN)if(st.startsWith(k)||k.startsWith(st)&&st.length>=3)syn.push(...SRCH_SYN[k].map(a=>srchNorm(a).replace(/-/g,' ')));
+      const m=ws=>own.some(x=>ws.some(w=>near(w,x)))||syn.some(a=>a.includes(' ')?ws.join(' ').includes(a):ws.some(w=>w.startsWith(a)));
+      if(!m(words)){ok=false;break}
+      score+=m(nameW)?2:1;
+    }
+    if(ok)res.push([score,p]);
+  }
+  return res.sort((a,b)=>b[0]-a[0]).map(x=>x[1]);
+}
+function srchRun(q){
+  let r=srchFind(q),fixed='';
+  if(!r.length&&/[a-z\[\];',.`]/i.test(q)){fixed=q.toLowerCase().replace(/./g,c=>{const i=QW.indexOf(c);return i<0?c:RU[i]});r=srchFind(fixed)}
+  return {r,fixed};
+}
+const SRCH_HINTS=['Рибай','Мозговые кости','Вагю','Щёчки','Котлетное мясо','Рёбрышки','Пармезан','Икра'];
+const lupa='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.4"/></svg>';
+function srchResults(q){
+  const box=$('#srchRes');if(!box)return;
+  if(!q.trim()){box.innerHTML=`<p class="srch-k mono">Например:</p><div class="chips">${SRCH_HINTS.map(h=>`<button class="chip" data-q="${h}">${h}</button>`).join('')}</div>`;return}
+  const {r,fixed}=srchRun(q);
+  box.innerHTML=r.length
+    ?`<p class="srch-k mono num">${fixed?`Искали «${fixed}» · `:''}Найдено: ${plural(r.length)}</p><div class="pgrid">${r.map(card).join('')}</div>`
+    :`<div class="cv-aside"><div><b>По запросу «${q.replace(/[<>&"]/g,'')}» ничего не нашли</b><p>Попробуйте написать короче, например «рибай» или «кости». Или позвоните: подскажем, что есть сегодня в лавке.</p></div><a class="btn btn-line" href="tel:+79262443737">+7 926 244-37-37</a></div><p class="srch-k mono" style="margin-top:28px">Часто ищут:</p><div class="chips">${SRCH_HINTS.map(h=>`<button class="chip" data-q="${h}">${h}</button>`).join('')}</div>`;
+}
+function renderSearch(q){
+  curCat=null;
+  $('#catView').innerHTML=`
+  <div class="wrap srch-hero">
+    <p class="crumbs mono"><a href="#top">Главная</a><span>/</span><span>Поиск</span></p>
+    <h1>Поиск <em>по всему каталогу</em></h1>
+    <form class="srch-f" role="search" onsubmit="return false"><span class="srch-i">${lupa}</span><input id="srchIn" type="search" enterkeyhint="search" autocomplete="off" placeholder="Например, мозговые кости" aria-label="Что ищем" value="${q.replace(/"/g,'&quot;')}"><button type="button" class="srch-x" aria-label="Очистить"${q?'':' hidden'}>×</button></form>
+  </div>
+  <nav class="cv-tabs" aria-label="Разделы каталога"><div class="wrap">${ORDER.map(k=>`<a href="#${k}">${CATS[k].name}<sup class="num">${count(k)}</sup></a>`).join('')}</div></nav>
+  <div class="wrap cv-body"><div id="srchRes"></div>
+    <p class="demo-note" style="margin-top:20px">Цены демонстрационные, итоговую сумму за весовой товар подтвердим после взвешивания.</p>
+  </div>`;
+  srchResults(q);
+  const inp=$('#srchIn');
+  inp.addEventListener('input',()=>{const v=inp.value;$('.srch-x').hidden=!v;srchResults(v);history.replaceState(null,'','#search'+(v?'='+encodeURIComponent(v):''))});
+  if(!q||matchMedia('(hover:hover)').matches)setTimeout(()=>inp.focus({preventScroll:true}),60);
+}
+document.addEventListener('click',e=>{
+  const h=e.target.closest('[data-q]');
+  if(h){const inp=$('#srchIn');if(inp){inp.value=h.dataset.q;inp.dispatchEvent(new Event('input'))}else location.hash='#search='+encodeURIComponent(h.dataset.q);return}
+  if(e.target.closest('.srch-x')){const inp=$('#srchIn');inp.value='';inp.dispatchEvent(new Event('input'));inp.focus()}
+});
+(()=>{const f=$('#homeSrch');if(!f)return;const go=()=>{const v=f.querySelector('input').value.trim();location.hash='#search'+(v?'='+encodeURIComponent(v):'')};
+  f.addEventListener('submit',e=>{e.preventDefault();go()});})();
+
 renderCount();route();if(location.hash!=='#account')loadMe();
 })();
+

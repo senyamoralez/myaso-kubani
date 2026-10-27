@@ -21,9 +21,11 @@ rep('/* ============ Compact phone layout ============ */', open(T + '/cat.css',
 
 # header nav -> categories
 cut('<nav class="nav" aria-label="Разделы">', '</nav>', '<nav class="nav" aria-label="Каталог">\n      <a href="#meat">Мясо</a><a href="#steaks">Стейки</a><a href="#cheese">Сыры</a><a href="#dairy">Молочка</a><a href="#italian">Итальянские сыры</a><a href="#sausage">Колбаса</a><a href="#fish">Рыба и икра</a><a href="#ready">Полуфабрикаты</a>\n    ', include_b=False)
+# search button in header (before account button)
+rep('<button class="acc-btn" id="accBtn"', '<a class="srch-btn" href="#search" aria-label="Поиск по каталогу"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.4"/></svg></a>\n    <button class="acc-btn" id="accBtn"')
 # mobile menu
 cut('<nav aria-label="Меню">', '</nav>', '''<nav aria-label="Меню">
-      <a href="#meat">Мясо</a><a href="#steaks">Стейки</a><a href="#cheese">Сыры</a><a href="#dairy">Молочка</a><a href="#italian">Итальянские сыры</a><a href="#sausage">Колбаса</a><a href="#fish">Рыба и икра</a><a href="#ready">Полуфабрикаты</a>
+      <a href="#search">Поиск <span>по каталогу</span></a><a href="#meat">Мясо</a><a href="#steaks">Стейки</a><a href="#cheese">Сыры</a><a href="#dairy">Молочка</a><a href="#italian">Итальянские сыры</a><a href="#sausage">Колбаса</a><a href="#fish">Рыба и икра</a><a href="#ready">Полуфабрикаты</a>
       <a href="#contact">Адреса</a>
     ''')
 
@@ -35,6 +37,7 @@ rep('<!-- 2. PROBLEM / SOLUTION -->', '''<!-- CATALOG INDEX -->
 <section class="cats" id="catalog" aria-labelledby="catsH">
   <div class="wrap">
     <div class="cats-head"><p class="mono">Каталог · 8 разделов</p><h2 id="catsH">Всё к столу <em>в одной лавке</em></h2></div>
+    <form class="srch-f home-srch" id="homeSrch" role="search"><span class="srch-i"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.4"/></svg></span><input type="search" enterkeyhint="search" autocomplete="off" placeholder="Найти товар, например «мозговые кости»" aria-label="Поиск по каталогу"><button class="srch-go" type="submit">Найти</button></form>
     <div class="tiles" id="tiles"></div>
   </div>
 </section>
