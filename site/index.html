@@ -876,6 +876,17 @@ body::before{background:#0E0B0A}
   .panel .big{font-size:2.4rem}
 }
 
+/* ============ HEADER BADGES (28.10) ============ */
+/* бонусы и корзина — одинаковые кружки, по центру кнопок */
+.acc-btn .bb:not([hidden]){display:inline-block;min-width:30px;height:30px;padding:0 8px;border-radius:15px;font:600 12px/30px var(--f-body);text-align:center;box-sizing:border-box}
+.acc-btn:has(.bb:not([hidden])){padding-right:6px}
+@media (max-width:520px){
+  .acc-btn,.cart-btn{width:auto;min-width:38px;height:38px;padding:0 5px;justify-content:center;gap:0}
+  .acc-btn:has(.bb:not([hidden])){padding-right:5px}
+  .acc-btn:has(.bb:not([hidden])) svg{display:none}
+  .acc-btn .bb:not([hidden]),.cart-count{min-width:28px;height:28px;padding:0 7px;border-radius:14px;font:600 12px/28px var(--f-body)}
+}
+
 /* ============ ADMIN PANEL (#admin) ============ */
 .badge{position:absolute;right:10px;top:10px;padding:5px 10px;border-radius:999px;font:600 11px/1 var(--f-body);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--blood-3)}
 .badge.b-new{background:#2D6A4F}.badge.b-hit{background:#9C7436}
