@@ -880,6 +880,12 @@ function createShop(opts) {
   // Владелец задаётся в настройках сервера (ADMIN_LOGIN, ADMIN_HASH), пока не сменит пароль в панели.
   const adminOf = login => db.admins[login] || (login === C.adminLogin && C.adminHash ? { hash: C.adminHash, role: 'owner', name: 'Владелец' } : null);
   const ROLE = { owner: 'Владелец', staff: 'Сотрудник' };
+  // Логин-телефон в любом виде (8-901-…, +7 (901) …, 901…) → 8XXXXXXXXXX.
+  const normLogin = v => {
+    const l = str(v, 40).trim().toLowerCase(), d = l.replace(/[\s()+-]/g, '');
+    if (/^\d{10,11}$/.test(d)) return '8' + d.slice(-10);
+    return l;
+  };
   function adminSess(req) {
     const m = (req.headers.authorization || '').match(/^Admin\s+([A-Za-z0-9_-]{30,})$/);
     if (!m) return null;
@@ -893,7 +899,7 @@ function createShop(opts) {
   const needAdmin = req => { const s = adminSess(req); if (!s) throw httpErr(401, 'Войдите в панель управления'); return s; };
   function adminLogin(b, ip) {
     if (hit('adm:' + ip, 8, 15 * 60e3) || hit('adm:all', 60, 3600e3)) throw httpErr(429, 'Слишком много попыток. Подождите 15 минут.');
-    const login = str(b.login, 40).toLowerCase(), a = adminOf(login);
+    const login = normLogin(b.login), a = adminOf(login);
     if (!a || !checkPw(String(b.password || ''), a.hash)) throw httpErr(401, 'Неверный логин или пароль');
     const token = crypto.randomBytes(24).toString('base64url');
     for (const [h, x] of Object.entries(db.asess)) if (Date.now() - Date.parse(x.seen) > 30 * 86400e3) delete db.asess[h];
@@ -979,8 +985,8 @@ function createShop(opts) {
   }
   function adminUsers(sess, b) {
     if (sess.a.role !== 'owner') throw httpErr(403, 'Доступами управляет владелец');
-    const login = str(b.login, 40).toLowerCase();
-    if (!/^[a-z0-9._-]{3,40}$/.test(login)) throw httpErr(400, 'Логин: латиница, цифры, точка, дефис, от 3 символов');
+    const login = normLogin(b.login);
+    if (!/^[a-z0-9._-]{3,40}$/.test(login)) throw httpErr(400, 'Логин: латиница, цифры, точка, дефис, от 3 символов, или телефон');
     if (b.action === 'add') {
       if (adminOf(login)) throw httpErr(400, 'Такой логин уже есть');
       const pw = String(b.password || '');

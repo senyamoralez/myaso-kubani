@@ -84,7 +84,7 @@ function renderAdmin(){
   if(!API){v.innerHTML=`<div class="wrap ad"><h1>Управление</h1><p class="ad-note">Панель работает только с подключённым сервером.</p></div>`;return}
   if(!AD.tok){v.innerHTML=`<div class="wrap ad ad-login"><form class="login-card" id="adLogin">
     <p class="mono">Для сотрудников</p><h1>Вход в&nbsp;управление</h1>
-    <label class="fld"><span>Логин</span><input name="login" autocomplete="username" autocapitalize="none" required></label>
+    <label class="fld"><span>Логин или телефон</span><input name="login" autocomplete="username" autocapitalize="none" required></label>
     <label class="fld"><span>Пароль</span><input name="password" type="password" autocomplete="current-password" required></label>
     ${AD.err?`<p class="err">${escA(AD.err)}</p>`:''}
     <button class="btn btn-fill" type="submit"${AD.busy?' disabled':''}>${AD.busy?'Входим…':'Войти'} <span class="ar">→</span></button>
@@ -116,7 +116,7 @@ function renderAdmin(){
       ${AD.users?`<div class="ad-card"><h3>Кто имеет доступ</h3><ul class="ad-users">${AD.users.map(u=>`<li><span><b>${escA(u.name)}</b><small class="mono">${escA(u.login)} · ${escA(u.roleName)}</small></span>${u.login===AD.me.login?'<small>это вы</small>':`<button type="button" data-deluser="${escA(u.login)}">Удалить</button>`}</li>`).join('')}</ul>
       <form id="adAdd" class="ad-add"><h3>Добавить сотрудника</h3>
        <label class="fld"><span>Имя</span><input name="name" placeholder="Например, Иван (продавец)" required></label>
-       <label class="fld"><span>Логин</span><input name="login" autocapitalize="none" placeholder="ivan" pattern="[a-zA-Z0-9._-]{3,40}" required></label>
+       <label class="fld"><span>Логин</span><input name="login" autocapitalize="none" placeholder="ivan или 8-901-123-45-67" pattern="[a-zA-Z0-9._()+ \-]{3,40}" required></label>
        <label class="fld"><span>Пароль, от 8 символов</span><input name="password" minlength="8" required></label>
        <label class="fld"><span>Права</span><select name="role"><option value="staff">Сотрудник: цены и наличие</option><option value="owner">Владелец: ещё и доступы</option></select></label>
        <button class="btn btn-ink" type="submit">Добавить</button></form></div>`:''}

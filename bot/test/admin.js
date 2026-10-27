@@ -84,6 +84,10 @@ const order = items => api('/api/orders', { consent: true, name: 'Анна', tel
     r = await api('/api/admin/state', null, tok); assert.ok(r.j.log.length >= 4); assert.equal(r.j.log[0].by, 'Иван'); ok('история хранит, кто и что менял');
     r = await api('/api/admin/users', { action: 'del', login: 'ivan' }, tok); assert.equal(r.code, 200);
     r = await api('/api/admin/state', null, tIvan); assert.equal(r.code, 401); ok('удалённый сотрудник сразу теряет доступ');
+    r = await api('/api/admin/users', { action: 'add', login: '8-901-102-07-37', password: 'phone-pass-1' }, tok); assert.equal(r.code, 200);
+    assert.ok(r.j.users.find(u => u.login === '89011020737'));
+    r = await api('/api/admin/login', { login: '+7 (901) 102-07-37', password: 'phone-pass-1' }); assert.ok(r.j.token); ok('вход по телефону в любом виде');
+    r = await api('/api/admin/users', { action: 'del', login: '89011020737' }, tok); assert.equal(r.code, 200);
 
     r = await api('/api/admin/password', { old: 'bad', password: 'new-owner-pass' }, tok); assert.equal(r.code, 400);
     r = await api('/api/admin/password', { old: PW, password: 'new-owner-pass' }, tok); assert.equal(r.code, 200);
