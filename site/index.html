@@ -912,6 +912,11 @@ body::before{background:#0E0B0A}
   .acc-btn .bb:not([hidden]),.cart-count{min-width:28px;height:28px;padding:0 7px;border-radius:14px;font:600 12px/28px var(--f-body)}
 }
 
+/* ============ FACTS (29.10) ============ */
+/* цифры не наезжают на подпись, колонки на одной линии */
+.fact b{font-variant-numeric:lining-nums tabular-nums;line-height:1;display:block}
+.facts .fact:nth-child(n){margin-top:0}
+
 /* ============ ADMIN PANEL (#admin) ============ */
 .badge{position:absolute;right:10px;top:10px;padding:5px 10px;border-radius:999px;font:600 11px/1 var(--f-body);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--blood-3)}
 .badge.b-new{background:#2D6A4F}.badge.b-hit{background:#9C7436}

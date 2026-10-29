@@ -196,3 +196,8 @@ body::before{background:#0E0B0A}
   .acc-btn:has(.bb:not([hidden])) svg{display:none}
   .acc-btn .bb:not([hidden]),.cart-count{min-width:28px;height:28px;padding:0 7px;border-radius:14px;font:600 12px/28px var(--f-body)}
 }
+
+/* ============ FACTS (29.10) ============ */
+/* цифры не наезжают на подпись, колонки на одной линии */
+.fact b{font-variant-numeric:lining-nums tabular-nums;line-height:1;display:block}
+.facts .fact:nth-child(n){margin-top:0}
