@@ -73,7 +73,7 @@ const SHOPS=[
  {id:'patriot',name:'ТЦ «Патриот»',addr:'ул. Саляма Адиля, 4, −1 этаж',area:'Хорошёво-Мнёвники',lat:55.7747,lon:37.4676},
  {id:'green',name:'ЖК «Грин Парк»',addr:'Сельскохозяйственная ул., 39, между 2 и 3 подъездом',area:'Останкинский',lat:55.8555,lon:37.6235},
  {id:'slavich',name:'ТЦ «Славич»',addr:'бул. Маршала Рокоссовского, 31',area:'Богородское',lat:55.8157,lon:37.7156}];
-let shopSel=null,shopManual=false,shopKm=null,shopMsg='',shopFar=false;
+let shopSel=null,shopManual=false,shopKm=null,shopMsg='';
 try{shopSel=localStorage.getItem('mk-shop');if(!SHOPS.some(x=>x.id===shopSel))shopSel=null}catch(e){}
 const km=(a,b,c,d)=>{const R=6371,r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
 const geoCache={};
@@ -86,22 +86,11 @@ async function geocode(a){
   if(!q)return null;
   if(q in geoCache)return geoCache[q];
   const inBox=p=>p&&p.lat>55.1&&p.lat<56.1&&p.lon>36.8&&p.lon<38.3?p:null;
-  const N='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ru&accept-language=ru&addressdetails=1&q=';
-  const nom=async(t,box)=>{const j=await (await fetch(N+encodeURIComponent(t)+(box?'&viewbox=36.8,56.1,38.3,55.1&bounded=1':''))).json();return j&&j[0]?{lat:+j[0].lat,lon:+j[0].lon,ad:j[0].address||{}}:null};
+  const nom=async t=>{const j=await (await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ru&accept-language=ru&viewbox=36.8,56.1,38.3,55.1&bounded=1&q='+encodeURIComponent(t+', Москва'))).json();return j&&j[0]?inBox({lat:+j[0].lat,lon:+j[0].lon}):null};
   const pho=async t=>{const j=await (await fetch('https://photon.komoot.io/api/?limit=1&lang=default&bbox=36.8,55.1,38.3,56.1&q='+encodeURIComponent(t+', Москва'))).json();const c=j&&j.features&&j.features[0]&&j.features[0].geometry.coordinates;return c?inBox({lat:c[1],lon:c[0]}):null};
-  const low=' '+a.toLowerCase().replace(/ё/g,'е')+' ';
-  // 1) ищем адрес как есть по всей России: если покупатель сам назвал город/регион не из Москвы — это не Москва
   let p=null;
-  try{const w=await nom(q,false);
-    if(w&&!inBox(w)&&!/москв/.test(low)){const ad=w.ad;const names=[ad.city,ad.town,ad.village,ad.hamlet,ad.municipality,ad.county,ad.state].filter(Boolean);
-      const stems=n=>String(n||'').toLowerCase().replace(/ё/g,'е').split(/[\s,.-]+/).filter(x=>x.length>3&&!/^(город|село|поселок|станица|деревня|хутор|район|край|область|улица|городское|сельское|поселение)$/.test(x)).map(x=>x.slice(0,5));
-      const road=stems(ad.road);
-      const named=names.some(n=>stems(n).some(x=>!road.includes(x)&&low.includes(x)));
-      if(named)return geoCache[q]={lat:w.lat,lon:w.lon,far:true}}
-    else if(w)p=w}catch(e){}
-  // 2) иначе — ищем внутри Москвы
-  for(const f of [()=>p,()=>nom(q,true),()=>pho(q),()=>q.includes(',')?nom(q.split(',').slice(0,-1).join(','),true):null]){try{p=await f()}catch(e){p=null}if(p)break}
-  return geoCache[q]=p?{lat:p.lat,lon:p.lon}:null;
+  for(const f of [()=>nom(q),()=>pho(q),()=>q.includes(',')?nom(q.split(',').slice(0,-1).join(',')):null]){try{p=await f()}catch(e){p=null}if(p)break}
+  return geoCache[q]=p;
 }
 let geoT=0,geoSeq=0;
 function shopsHtml(){
@@ -111,12 +100,11 @@ function shopsHtml(){
 function paintShops(){const el=$('#shopList');if(!el)return;el.innerHTML=shopsHtml();const h=$('#shopHint');if(h)h.textContent=shopMsg||($('#how-p')&&$('#how-p').checked?'Выберите, где удобнее забрать заказ.':'Укажите адрес — подберём ближайший магазин. Можно выбрать и вручную.')}
 function findShop(){
   clearTimeout(geoT);const inp=$('#f-addr');if(!inp)return;const a=inp.value.trim();
-  if(a.length<6){shopKm=null;shopFar=false;shopMsg='';paintShops();return}
+  if(a.length<6){shopKm=null;shopMsg='';paintShops();return}
   geoT=setTimeout(async()=>{const n=++geoSeq;shopMsg='Ищем ближайший магазин…';paintShops();
     const p=await geocode(a);if(n!==geoSeq)return;
     if(!p){shopKm=null;shopMsg='Не нашли адрес на карте — выберите магазин вручную.';paintShops();return}
-    if(p.far){shopKm=null;shopFar=true;if(!shopManual)shopSel=null;shopMsg='Этот адрес далеко от наших магазинов: доставляем только по Москве. Укажите московский адрес или выберите магазин для самовывоза.';paintShops();return}
-    shopFar=false;shopKm={};SHOPS.forEach(x=>shopKm[x.id]=km(p.lat,p.lon,x.lat,x.lon));
+    shopKm={};SHOPS.forEach(x=>shopKm[x.id]=km(p.lat,p.lon,x.lat,x.lon));
     const best=Object.entries(shopKm).sort((x,y)=>x[1]-y[1])[0][0];
     if(!shopManual||!shopSel)shopSel=best;
     shopMsg=shopSel===best?'Заказ соберёт ближайший к вам магазин.':'Ближе к вам другой магазин — можно переключиться.';paintShops()},900);
@@ -216,7 +204,7 @@ drawer.addEventListener('change',e=>{if(e.target.name==='how'){$('#addrFld').hid
 drawer.addEventListener('input',e=>{if(e.target.id==='f-addr')findShop()});
 drawer.addEventListener('submit',async e=>{e.preventDefault();
   const name=$('#f-name').value.trim(),tel=$('#f-tel').value.trim(),pickup=$('#how-p').checked,addr=$('#f-addr').value.trim();
-  const err=[];if(!name)err.push('имя');if(tel.replace(/\D/g,'').length<10)err.push('телефон из 10–11 цифр');if(!pickup&&!addr)err.push('адрес доставки');if(!pickup&&shopFar)err.push('адрес в Москве (за её пределы не доставляем)');if(!shopSel)err.push('магазин');
+  const err=[];if(!name)err.push('имя');if(tel.replace(/\D/g,'').length<10)err.push('телефон из 10–11 цифр');if(!pickup&&!addr)err.push('адрес доставки');if(!shopSel)err.push('магазин');
   const box=$('#formErr');if(err.length){box.textContent='Заполните: '+err.join(', ')+'.';box.hidden=false;return}
   if(!$('#f-agree').checked){box.textContent='Отметьте согласие на обработку персональных данных.';box.hidden=false;return}
   const t=total(),free=t>=5000;
