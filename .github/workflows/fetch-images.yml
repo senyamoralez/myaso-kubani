@@ -1,0 +1,42 @@
+name: Фото поставщиков
+# Контейнер разработки не видит сайты поставщиков, поэтому фото качает раннер GitHub.
+# Список: tools/fetch/*.tsv — строки «URL<TAB>путь в репозитории». Уже скачанные пропускаются.
+on:
+  push:
+    branches: [main]
+    paths: ['tools/fetch/**', '.github/workflows/fetch-images.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: fetch-images
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Скачать и ужать фото
+        run: |
+          command -v convert >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick)
+          ok=0; bad=0
+          cat tools/fetch/*.tsv | while IFS=$'\t' read -r url dest; do
+            [ -z "$url" ] && continue
+            [ -f "$dest" ] && continue
+            mkdir -p "$(dirname "$dest")"
+            if curl -fsSL --retry 3 -A "Mozilla/5.0" -o /tmp/src "$url"; then
+              convert /tmp/src -background white -alpha remove -alpha off -resize '900x900>' -strip -quality 84 "$dest" && echo "ok  $dest" || echo "BAD $dest"
+            else echo "ERR $url"; fi
+          done
+      - name: Закоммитить
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/img
+          if git diff --cached --quiet; then echo "нет новых фото"; exit 0; fi
+          git commit -m "Фото поставщиков (скачаны автоматически)"
+          git pull --rebase origin main && git push origin HEAD:main
+      - name: Перевыложить сайт
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main

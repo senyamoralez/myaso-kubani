@@ -459,7 +459,7 @@ function createShop(opts) {
 /today — итоги дня (сами приходят в ${C.summaryAt})
 /client +79001234567 — карточка покупателя
 /card — карта для оплаты переводом
-/topics — создать темы «Заказы · магазин»
+/topics — создать вкладки «магазин · заказы»
 /qr — с картинкой: новый QR для оплаты
 /setup — обновить оформление группы`;
   async function setupGroup(chat) {
@@ -898,22 +898,22 @@ function createShop(opts) {
     db.payCard = { num, name: str(m[2].replace(/^[\s,—-]+/, ''), 80), at: iso() }; save();
     return tg('sendMessage', { chat_id: staff(), parse_mode: 'HTML', text: `✅ Карта для оплаты: <code>${fmtCard(num)}</code>${db.payCard.name ? ', ' + esc(db.payCard.name) : ''}\nПокупатели увидят её при оформлении и номер заказа для комментария к переводу.` });
   }
-  // Темы в рабочей группе: «Заказы · <магазин>». Группе нужно включить «Темы», боту — право управлять темами.
+  // Вкладки (темы) в рабочей группе: «<магазин> · заказы». Группе нужно включить «Темы», боту — право управлять темами.
   async function makeTopics(chat) {
     const info = await tg('getChat', { chat_id: chat }).catch(() => null);
-    if (!info || !info.is_forum) return tg('sendMessage', { chat_id: chat, _nt: true, parse_mode: 'HTML', text: '⚠️ В группе не включены темы.\n\nОткройте группу → ✏️ Изменить → включите <b>Темы</b>. Боту дайте права администратора с пунктом «Управление темами». Потом снова отправьте /topics.\n\n(Если ID группы после этого поменяется, бот сам его подхватит.)' });
+    if (!info || !info.is_forum) return tg('sendMessage', { chat_id: chat, _nt: true, parse_mode: 'HTML', text: '⚠️ В группе не включены темы (вкладки).\n\nОткройте группу → ✏️ Изменить → включите <b>Темы</b>. Боту дайте права администратора с пунктом «Управление темами». Потом снова отправьте /topics.\n\n(Если ID группы после этого поменяется, бот сам его подхватит.)' });
     db.topics = db.topics || {};
     const res = [];
     for (const s of C.shops) {
       if (db.topics[s.id]) { res.push(`• ${esc(s.name)} — уже есть`); continue; }
       try {
-        const t = await tg('createForumTopic', { chat_id: chat, name: `Заказы · ${s.name}`.slice(0, 128) });
+        const t = await tg('createForumTopic', { chat_id: chat, name: `${s.name} · заказы`.slice(0, 128) });
         db.topics[s.id] = t.message_thread_id; save();
         await tg('sendMessage', { chat_id: chat, message_thread_id: t.message_thread_id, parse_mode: 'HTML', text: `🏬 <b>${esc(s.name)}</b>\n${esc(s.addr)}\n\nСюда приходят заказы этого магазина.` }).catch(() => {});
         res.push(`• ${esc(s.name)} — создана`);
       } catch (e) { res.push(`• ${esc(s.name)} — ⚠️ ${esc(e.message)}`); }
     }
-    return tg('sendMessage', { chat_id: chat, _nt: true, parse_mode: 'HTML', text: `<b>Темы для магазинов</b>\n${res.join('\n')}\n\nЗаказы без выбранного магазина и итоги дня приходят в общую тему.` });
+    return tg('sendMessage', { chat_id: chat, _nt: true, parse_mode: 'HTML', text: `<b>Вкладки магазинов</b>\n${res.join('\n')}\n\nЗаказы без выбранного магазина и итоги дня приходят в общую тему.` });
   }
   function qr() {
     if (db.qr) return { bytes: Buffer.from(db.qr.b64, 'base64'), type: db.qr.type };
