@@ -201,3 +201,22 @@ body::before{background:#0E0B0A}
 /* цифры не наезжают на подпись, колонки на одной линии */
 .fact b{font-variant-numeric:lining-nums tabular-nums;line-height:1;display:block}
 .facts .fact:nth-child(n){margin-top:0}
+
+/* ============ ORDER TRACK (29.10) ============ */
+/* шкала статуса заказа в кабинете */
+.o-track{grid-column:1/-1;list-style:none;margin:2px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.o-track li{position:relative;display:grid;justify-items:center;gap:6px;text-align:center;font-size:11.5px;line-height:1.25;color:var(--tallow-3)}
+.o-track li::before{content:"";position:absolute;top:6px;left:-50%;width:100%;height:2px;background:var(--line-2)}
+.o-track li:first-child::before{display:none}
+.o-track i{position:relative;z-index:1;width:14px;height:14px;border-radius:50%;background:var(--ink-2,#fff);box-shadow:inset 0 0 0 2px var(--line-2)}
+.o-track li.ok{color:var(--tallow-2)}
+.o-track li.ok::before,.o-track li.now::before{background:var(--brass)}
+.o-track li.ok i{background:var(--brass);box-shadow:none}
+.o-track li.now{color:var(--tallow);font-weight:600}
+.o-track li.now i{background:var(--brass);box-shadow:0 0 0 4px rgba(201,164,108,.28);animation:oPulse 1.6s ease-in-out infinite}
+.o-track.wait{opacity:.6}
+@keyframes oPulse{50%{box-shadow:0 0 0 7px rgba(201,164,108,.12)}}
+.o-st.st-paid,.o-st.st-work,.o-st.st-packed,.o-st.st-road{background:rgba(201,164,108,.18);color:var(--brass-2,#a07a3c)}
+.o-st.st-done{background:rgba(76,140,74,.15);color:#3f7a3d}
+.o-st.st-cancel{background:rgba(160,40,40,.12);color:#a33}
+.o-st.st-new,.o-st.st-claimed{background:rgba(220,150,40,.15);color:#a86a12}

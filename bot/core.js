@@ -165,7 +165,7 @@ function createShop(opts) {
     done:   { t: 'Выполнен',             e: '✅' },
     cancel: { t: 'Отменён',              e: '⛔' },
   };
-  const STATUS_PUBLIC = { new: 'Ждёт оплаты', claimed: 'Проверяем оплату', paid: 'Оплачен', work: 'В работе', packed: 'Собран', road: 'В пути', done: 'Выполнен', cancel: 'Отменён' };
+  const STATUS_PUBLIC = { new: 'Ждёт оплаты', claimed: 'Проверяем оплату', paid: 'Оплачен', work: 'В работе', packed: 'Собран', road: 'Передан в доставку', done: 'Выполнен', cancel: 'Отменён' };
   const CUSTOMER_TEXT = {
     new: 'Заказ создан и ждёт оплаты.',
     claimed: 'Спасибо! Проверяем поступление оплаты, обычно это 5–10 минут.',
@@ -828,7 +828,7 @@ function createShop(opts) {
       phone: u.phone, name: u.name, birthday: u.birthday, note: u.note, addresses: u.addresses, telegram: !!u.chat,
       bonus: u.bonus, spent: u.spent, level: L, levels: C.levels, maxBonusShare: C.maxBonusShare,
       ledger: u.ledger.slice(0, 30),
-      orders: orders.map(o => ({ no: o.no, at: o.createdAt, status: o.status, statusText: STATUS_PUBLIC[o.status], total: o.total, bonusUsed: o.bonusUsed || 0, cashback: o.cashback || 0,
+      orders: orders.map(o => ({ no: o.no, at: o.createdAt, status: o.status, statusText: o.status === 'done' ? (o.pickup ? 'Выдан' : 'Доставлен') : STATUS_PUBLIC[o.status], total: o.total, bonusUsed: o.bonusUsed || 0, cashback: o.cashback || 0,
         items: o.items.map(({ id, name, qty, q }) => ({ id, name, qty, q })), pickup: o.pickup, addr: o.addr, payable: o.status === 'new' })),
       sessions: Object.entries(db.sessions).filter(([, s]) => s.phone === u.phone).map(([h, s]) => ({ id: h.slice(0, 8), current: h === sess.hash, created: s.created, seen: s.seen, ua: s.ua })),
     };

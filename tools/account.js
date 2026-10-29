@@ -19,7 +19,7 @@ const dsSave=()=>{try{localStorage.setItem('mk-demo',JSON.stringify(DS))}catch(e
 const normPhone=p=>{let d=String(p||'').replace(/\D/g,'');if(d.length===11&&(d[0]==='8'||d[0]==='7'))d='7'+d.slice(1);else if(d.length===10)d='7'+d;return /^7\d{10}$/.test(d)?'+'+d:null};
 const lvlOf=sp=>{let L=LEVELS[0];LEVELS.forEach(l=>{if(sp>=l.from)L=l});const n=LEVELS[LEVELS.indexOf(L)+1];return {name:L.name,rate:L.rate,next:n?{name:n.name,rate:n.rate,need:n.from-sp}:null}};
 function dsBonus(u,d,reason,no){if(!d)return;u.bonus=Math.max(0,u.bonus+d);u.ledger.unshift({at:new Date().toISOString(),delta:d,reason,order:no||null})}
-const PUB={new:'Ждёт оплаты',claimed:'Проверяем оплату',paid:'Оплачен',work:'В работе',packed:'Собран',road:'В пути',done:'Выполнен',cancel:'Отменён'};
+const PUB={new:'Ждёт оплаты',claimed:'Проверяем оплату',paid:'Оплачен',work:'В работе',packed:'Собран',road:'Передан в доставку',done:'Выполнен',cancel:'Отменён'};
 function demoErr(m,s){const e=new Error(m);e.status=s||400;throw e}
 async function demoApi(path,b){
   await new Promise(r=>setTimeout(r,250));
@@ -65,12 +65,23 @@ function demoAdvance(no,status,fact){
 
 /* ---------- session state ---------- */
 let ME=null,meLoaded=false;
+// Шкала статуса заказа в кабинете: оплачен → в работе → в доставке → доставлен (самовывоз: собран → выдан).
+function oTrack(o){
+  if(o.status==='cancel')return '';
+  const steps=o.pickup?['Оплачен','В работе','Собран, ждёт вас','Выдан']:['Оплачен','В работе','Передан в доставку','Доставлен'];
+  const at=(o.pickup?{paid:0,work:1,packed:2,done:3}:{paid:0,work:1,packed:1,road:2,done:3})[o.status];
+  const cur=at==null?-1:at;
+  return `<ol class="o-track${cur<0?' wait':''}">${steps.map((t,i)=>`<li class="${i<cur?'ok':i===cur?(o.status==='done'?'ok':'now'):''}"><i></i><span>${t}</span></li>`).join('')}</ol>`;
+}
 async function loadMe(){try{ME=await api('/api/me')}catch(e){ME=null}meLoaded=true;renderAccBtn();return ME}
 function renderAccBtn(){const b=$('#accBtn');if(!b)return;b.querySelector('.lbl').textContent=ME?(ME.name||'Кабинет'):'Войти';b.classList.toggle('in',!!ME);
   const bb=b.querySelector('.bb');if(bb){bb.textContent=ME?ME.bonus:'';bb.hidden=!ME}}
 
 /* ---------- account view ---------- */
 let accTab='orders',login={step:'phone'},pollT=null;
+// статусы заказов обновляются сами, пока открыт кабинет на вкладке «Заказы»
+setInterval(async()=>{if(!API||location.hash!=='#account'||accTab!=='orders'||!ME||document.hidden)return;
+  const was=JSON.stringify(ME.orders.map(o=>o.status));await loadMe();if(ME&&location.hash==='#account'&&accTab==='orders'&&JSON.stringify(ME.orders.map(o=>o.status))!==was)renderAccount()},30000);
 const fmtD=d=>new Date(d).toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
 const fmtDT=d=>new Date(d).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 const ua=s=>/iPhone|iPad/.test(s)?'iPhone / iPad':/Android/.test(s)?'Android':/Mac OS/.test(s)?'Mac':/Windows/.test(s)?'Windows':'Браузер';
@@ -105,6 +116,7 @@ function accBody(){
     return `<div class="olist">${ME.orders.map(o=>`<article class="orow">
       <div class="o-k"><b class="num">№ ${o.no}</b><span class="mono">${fmtDT(o.at)}</span></div>
       <span class="o-st st-${o.status}">${escA(o.statusText)}</span>
+      ${oTrack(o)}
       <p class="o-items">${o.items.map(i=>escA(i.name)+' × '+escA(i.qty)).join(', ')}</p>
       <div class="o-sum"><b class="num">${rub(o.total)}</b>${o.bonusUsed?`<span class="mono">−${o.bonusUsed} бонусов</span>`:''}${o.cashback?`<span class="mono plus">+${o.cashback} бонусов</span>`:''}</div>
       <button class="btn btn-line o-rep" data-repeat="${o.no}">Повторить</button>
