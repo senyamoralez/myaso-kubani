@@ -14,7 +14,7 @@ function configFromEnv(E) {
     pickupAddr: E.PICKUP_ADDRESS || 'Таллинская, 7, ТЦ «Московская ярмарка», 1 этаж',
     deliveryFee: +(E.DELIVERY_FEE || 500),
     freeFrom: +(E.FREE_DELIVERY_FROM || 5000),
-    payCard: (E.PAY_CARD || '').replace(/\D/g, ''), payCardName: E.PAY_CARD_NAME || '',
+    payCard: (E.PAY_CARD || '').replace(/\D/g, ''), payCardName: E.PAY_CARD_NAME || '', payPhone: E.PAY_PHONE || '',
     payNote: E.PAY_NOTE || 'Оплата по QR-коду СБП. В назначении платежа укажите номер заказа.',
     summaryAt: E.DAILY_SUMMARY_AT || '21:00',
     tz: E.TZ_NAME || 'Europe/Moscow',
@@ -879,7 +879,7 @@ function createShop(opts) {
   }
   const publicOrder = o => ({ no: o.no, token: o.token, status: o.status, statusText: CUSTOMER_TEXT[o.status], total: o.total, goods: o.goods, delivery: o.delivery, bonusUsed: o.bonusUsed || 0, fact: o.fact,
     items: o.items.map(({ name, qty, sum }) => ({ name, qty, sum })),
-    payCard: payCard() ? { num: fmtCard(payCard().num), name: payCard().name || '' } : null,
+    payCard: payCard() ? { num: fmtCard(payCard().num), name: payCard().name || '', phone: C.payPhone } : null,
     payQr: db.qr || (opts.readQrFile && opts.readQrFile()) ? '/pay-qr' + (db.qr ? '?v=' + Date.parse(db.qr.at) : '') : null, payNote: C.payNote,
     botLink: customerChat(o) ? null : ME ? `https://t.me/${ME.username}?start=o${o.no}_${o.token}` : null,
     telegramLinked: !!customerChat(o) });

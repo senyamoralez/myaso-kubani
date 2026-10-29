@@ -247,3 +247,4 @@ a.pc-add{text-decoration:none;color:inherit}
 .pay-card b{font:600 1.35rem/1.2 var(--f-mono);letter-spacing:.04em;word-break:break-word}
 .pay-card small{font-size:13px;color:var(--bone-ink-2)}
 .pay-card .copy{margin-top:4px;background:var(--bone-ink);color:var(--bone);border-radius:999px;padding:7px 14px;font-size:12.5px}
+.pay-card .pay-or{margin-top:10px;padding-top:10px;border-top:1px solid var(--bone-line);width:100%;font-size:12.5px;color:var(--bone-ink-2)}

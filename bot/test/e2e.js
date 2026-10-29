@@ -141,7 +141,7 @@ let staffMsg;
     assert.ok(sent.some(m => m.chat_id == STAFF && /Карта для оплаты/.test(m.text || '')), 'карта сохранена');
     r = await api('/api/orders', { consent: true, name: 'Пётр', tel: '+79165551241', addr: 'ул. Тест, 2', items: [{ id: 'ribeye-steaks', q: 2 }] });
     assert.equal(r.code, 201); assert.ok(+r.j.no > +o.no);
-    assert.deepEqual(r.j.payCard, { num: '2202 2000 1234 5678', name: 'Сергей М., Сбербанк' }); await wait(200);
+    assert.equal(r.j.payCard.num, '2202 2000 1234 5678'); assert.equal(r.j.payCard.name, 'Сергей М., Сбербанк'); await wait(200);
     assert.ok(sent.some(m => m.chat_id == STAFF && (m.text || '').includes(`комментарием <b>${r.j.no}</b>`)), 'в карточке номер для поиска перевода');
     console.log('✓ оплата на карту: номер заказа и карта на сайте и в группе');
     console.log('\nВСЕ ПРОВЕРКИ ПРОЙДЕНЫ');
