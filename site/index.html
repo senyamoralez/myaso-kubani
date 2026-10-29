@@ -1946,12 +1946,18 @@ try{shopSel=localStorage.getItem('mk-shop');if(!SHOPS.some(x=>x.id===shopSel))sh
 const km=(a,b,c,d)=>{const R=6371,r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
 const geoCache={};
 async function geocode(a){
-  // без квартиры/подъезда/этажа — геокодер их не знает
-  let q=a.replace(/,?\s*(кв\.?|квартира|под[ъь]?езд|подъезд|п\.|эт\.?|этаж|домофон|офис|оф\.)\s*[\w-]*/gi,'').trim();
-  if(!/москв/i.test(q))q='Москва, '+q;
+  // без квартиры/подъезда/этажа и «г. Москва» — геокодеры их не любят; город ставим в конец
+  // без lookbehind: старый Safari на нём падает целиком
+  let q=(' '+a).replace(/([^а-яё])(квартира|кв|подъезд|под|п|этаж|эт|домофон|офис|оф)\.?\s*\d+[а-яa-z]?(?![а-яё\d])/gi,'$1')
+    .replace(/([^а-яё])(г\.?\s*)?москва(?![а-яё])/gi,'$1').replace(/([^а-яё])(дом|д)\.?\s*(?=\d)/gi,'$1')
+    .replace(/\s*,(\s*,)*\s*/g,', ').replace(/^[,\s]+|[,\s]+$/g,'');
+  if(!q)return null;
   if(q in geoCache)return geoCache[q];
-  const tryQ=async t=>{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ru&accept-language=ru&viewbox=36.8,56.1,38.3,55.1&bounded=1&q='+encodeURIComponent(t));const j=await r.json();return j&&j[0]?{lat:+j[0].lat,lon:+j[0].lon}:null};
-  let p=null;try{p=await tryQ(q);if(!p&&q.includes(','))p=await tryQ(q.split(',').slice(0,-1).join(','))}catch(e){p=null}
+  const inBox=p=>p&&p.lat>55.1&&p.lat<56.1&&p.lon>36.8&&p.lon<38.3?p:null;
+  const nom=async t=>{const j=await (await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ru&accept-language=ru&viewbox=36.8,56.1,38.3,55.1&bounded=1&q='+encodeURIComponent(t+', Москва'))).json();return j&&j[0]?inBox({lat:+j[0].lat,lon:+j[0].lon}):null};
+  const pho=async t=>{const j=await (await fetch('https://photon.komoot.io/api/?limit=1&lang=default&bbox=36.8,55.1,38.3,56.1&q='+encodeURIComponent(t+', Москва'))).json();const c=j&&j.features&&j.features[0]&&j.features[0].geometry.coordinates;return c?inBox({lat:c[1],lon:c[0]}):null};
+  let p=null;
+  for(const f of [()=>nom(q),()=>pho(q),()=>q.includes(',')?nom(q.split(',').slice(0,-1).join(',')):null]){try{p=await f()}catch(e){p=null}if(p)break}
   return geoCache[q]=p;
 }
 let geoT=0,geoSeq=0;
