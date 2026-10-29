@@ -20,7 +20,11 @@ export class Shop extends DurableObject {
   async load() {
     const db = emptyDb();
     const snap = new Map();
-    for (const [k, v] of await this.ctx.storage.list()) {
+    // фото товаров (ключи img:…) в память не грузим — читаем по запросу
+    const all = new Map();
+    for (const p of COLL) for (const [k, v] of await this.ctx.storage.list({ prefix: p + '/' })) all.set(k, v);
+    for (const [k, v] of await this.ctx.storage.get(['meta', 'qr'])) all.set(k, v);
+    for (const [k, v] of all) {
       snap.set(k, v);
       const i = k.indexOf('/');
       if (i > 0 && COLL.includes(k.slice(0, i))) db[k.slice(0, i)][k.slice(i + 1)] = JSON.parse(v);
@@ -31,7 +35,10 @@ export class Shop extends DurableObject {
     this.snap = snap;
     this.dirty = false;
     this.C = configFromEnv(this.env);
-    this.shop = createShop({ C: this.C, db, catalog, crypto, Buffer, assets: { groupPhoto: new Uint8Array(groupPhoto) }, save: () => { this.dirty = true; } });
+    this.shop = createShop({ C: this.C, db, catalog, crypto, Buffer, assets: { groupPhoto: new Uint8Array(groupPhoto) }, save: () => { this.dirty = true; },
+      imgPut: (id, bytes, type) => this.ctx.storage.put('img:' + id, { type, bytes: new Uint8Array(bytes) }),
+      imgGet: async id => { const v = await this.ctx.storage.get('img:' + id); return v ? { type: v.type, bytes: Buffer.from(v.bytes) } : null; },
+      imgDel: id => this.ctx.storage.delete('img:' + id) });
   }
 
   // База лежит по ключам: orders/1001, users/+7…, meta, qr. Пишем только изменившиеся ключи.
@@ -113,7 +120,7 @@ export default {
       method: request.method, path: url.pathname, query: url.search,
       headers: { origin: h.get('origin') || '', cookie: h.get('cookie') || '', authorization: h.get('authorization') || '', 'user-agent': h.get('user-agent') || '' },
       ip: h.get('cf-connecting-ip') || '',
-      bodyText: request.method === 'POST' ? (await request.text()).slice(0, 60000) : '',
+      bodyText: request.method === 'POST' ? (await request.text()).slice(0, url.pathname === '/api/admin/photo' ? 1500000 : 60000) : '',
       selfUrl: url.origin,
     });
     return new Response(r.status === 204 ? null : r.body, { status: r.status, headers: r.headers });

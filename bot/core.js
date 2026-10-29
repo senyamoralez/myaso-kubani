@@ -1030,6 +1030,33 @@ function createShop(opts) {
     }
     return { ok: true, changed: lines.length, ov: db.ov };
   }
+  // Фото товара из панели: сайт присылает уже ужатый JPEG (base64), храним вне базы через opts.imgPut.
+  const PHOTO_BODY = 1.4e6;
+  async function adminPhoto(sess, b) {
+    const id = str(b.id, 80), base = CATALOG[id];
+    if (!base) throw httpErr(400, 'Товар не найден');
+    if (!opts.imgPut) throw httpErr(501, 'Загрузка фото на этом сервере не настроена');
+    const who = sess.a.name || sess.login, next = Object.assign({}, db.ov[id] || {});
+    let text;
+    if (b.reset) {
+      delete next.img; delete next.fit;
+      if (opts.imgDel) await opts.imgDel(id);
+      text = 'вернули исходное фото';
+    } else {
+      const m = String(b.data || '').match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+      if (!m) throw httpErr(400, 'Нужна картинка JPG, PNG или WebP');
+      const bytes = Buffer.from(m[2], 'base64');
+      if (bytes.length < 200 || bytes.length > 1e6) throw httpErr(400, 'Фото слишком большое — до 1 МБ после сжатия');
+      await opts.imgPut(id, bytes, 'image/' + m[1]);
+      next.img = `/img/${id}?v=${Date.now().toString(36)}`; next.fit = 'cover';
+      text = 'новое фото';
+    }
+    if (Object.keys(next).length) db.ov[id] = next; else delete db.ov[id];
+    db.alog.unshift({ at: iso(), by: who, id, name: base.name, text }); db.alog = db.alog.slice(0, 300);
+    db.ovAt = iso(); save();
+    if (staff()) await tg('sendMessage', { chat_id: staff(), text: `📷 ${esc(who)}: ${esc(base.name)} — ${text}`, parse_mode: 'HTML', disable_notification: true }).catch(() => {});
+    return { ok: true, ov: db.ov };
+  }
   function adminState(sess) {
     const users = sess.a.role === 'owner'
       ? Object.entries(Object.assign(C.adminHash && !db.admins[C.adminLogin] ? { [C.adminLogin]: { role: 'owner', name: 'Владелец' } } : {}, db.admins))
@@ -1075,10 +1102,10 @@ function createShop(opts) {
     const o = req.headers.origin;
     return !o || C.origins.includes('*') || C.origins.includes(o);
   }
-  function parseBody(req) {
+  function parseBody(req, max = 50e3) {
     if (req.method !== 'POST') return {};
     const s = req.bodyText || '';
-    if (s.length > 50e3) throw httpErr(413, 'Слишком большой запрос');
+    if (s.length > max) throw httpErr(413, 'Слишком большой запрос');
     try { return JSON.parse(s || '{}'); } catch (e) { throw httpErr(400, 'Неверный запрос'); }
   }
 
@@ -1127,11 +1154,18 @@ function createShop(opts) {
         return reply(201, publicOrder(o));
       }
       if (P === '/api/catalog') return reply(200, { ov: db.ov, at: db.ovAt || null });
+      const im = P.match(/^\/img\/([A-Za-z0-9_-]{1,80})$/);
+      if (im && M === 'GET') {
+        const f = opts.imgGet ? await opts.imgGet(im[1]) : null;
+        if (!f) return reply(404, { error: 'нет фото' });
+        const r = reply(200, f.bytes, f.type); r.headers['cache-control'] = 'public, max-age=31536000, immutable'; return r;
+      }
       if (P === '/api/admin/login' && M === 'POST') return reply(200, adminLogin(parseBody(req), ip));
       if (P.startsWith('/api/admin/')) {
         const s = needAdmin(req);
         if (P === '/api/admin/state') return reply(200, adminState(s));
         if (M !== 'POST') return reply(405, { error: 'POST' });
+        if (P === '/api/admin/photo') return reply(200, await adminPhoto(s, parseBody(req, PHOTO_BODY)));
         const b = parseBody(req);
         if (P === '/api/admin/save') return reply(200, await adminSave(s, b));
         if (P === '/api/admin/password') return reply(200, adminPassword(s, b));

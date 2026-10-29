@@ -1023,6 +1023,14 @@ body::before{background:#0E0B0A}
   .ad-save>span{font-size:13px}
   .ad-top-r .btn{height:40px;padding:0 14px}
 }
+/* смена фото товара (29.10) */
+.ad-ph{position:relative;display:block;cursor:pointer}
+.ad-ph input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.ad-ph i{position:absolute;right:2px;bottom:2px;width:20px;height:20px;border-radius:50%;background:rgba(20,16,16,.72);font-style:normal;font-size:11px;line-height:20px;text-align:center;pointer-events:none}
+.ad-ph-x{position:absolute;left:2px;top:2px;z-index:2;width:20px;height:20px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.92);color:#333;font-size:12px;line-height:20px;cursor:pointer}
+.ad-row.up .ad-ph{opacity:.4;pointer-events:none}
+.ad-row.up .ad-ph::after{content:"";position:absolute;inset:16px;border-radius:50%;border:2px solid var(--brass);border-top-color:transparent;animation:spin 1s linear infinite}
+.ad-hint{margin:8px 0 0;font-size:12.5px;opacity:.7}
 
 /* ============ Compact phone layout ============ */
 @media (max-width:620px){
@@ -1719,12 +1727,12 @@ document.addEventListener('submit',async e=>{
 
 /* ---------- live catalog: prices, stock and labels from the admin panel ---------- */
 const FULL=DATA.items.slice();
-const BASE={};FULL.forEach(p=>BASE[p.id]={price:p.price,pp:p.pp,stock:p.stock,hidden:p.hidden,badge:p.badge,old:p.old});
+const BASE={};FULL.forEach(p=>BASE[p.id]={price:p.price,pp:p.pp,stock:p.stock,hidden:p.hidden,badge:p.badge,old:p.old,img:p.img,fit:p.fit});
 const BADGES={hit:'Хит',new:'Новинка',sale:'Скидка'};
 let OV={};
 function applyOv(ov){
   OV=ov||{};
-  FULL.forEach(p=>{const b=BASE[p.id];['price','pp','stock','hidden','badge','old'].forEach(k=>{if(b[k]===undefined)delete p[k];else p[k]=b[k]});if(OV[p.id])Object.assign(p,OV[p.id])});
+  FULL.forEach(p=>{const b=BASE[p.id];['price','pp','stock','hidden','badge','old','img','fit'].forEach(k=>{if(b[k]===undefined)delete p[k];else p[k]=b[k]});if(OV[p.id]){Object.assign(p,OV[p.id]);if(p.img&&p.img[0]==='/')p.img=API+p.img}});
   DATA.items=FULL.filter(p=>!p.hidden);
 }
 function rerenderView(){
@@ -1779,7 +1787,7 @@ function adRow(p){
   const pr=adVal(p,'price'),st=adVal(p,'stock'),hd=adVal(p,'hidden'),bd=adVal(p,'badge'),old=adVal(p,'old'),ch=!!AD.draft[p.id];
   return `<div class="ad-row${ch?' ch':''}${hd?' hd':''}" data-id="${escA(p.id)}">
    <label class="ad-ck"><input type="checkbox" data-ad="sel"${AD.sel.has(p.id)?' checked':''} aria-label="Выбрать"></label>
-   <span class="ad-ph">${p.img?`<img src="${escA(p.img)}" alt="" loading="lazy">`:''}</span>
+   <label class="ad-ph" title="Сменить фото">${p.img?`<img src="${escA(p.img)}" alt="" loading="lazy">`:''}<input type="file" accept="image/*" data-ad="photo" aria-label="Сменить фото: ${escA(p.name)}"><i aria-hidden="true">📷</i>${OV[p.id]&&OV[p.id].img?'<button type="button" class="ad-ph-x" data-ad="photoReset" title="Вернуть исходное фото" aria-label="Вернуть исходное фото">↺</button>':''}</label>
    <span class="ad-nm"><b>${escA(p.name)}</b><small class="mono">${escA([CATS[p.cat]?.name,p.subName,p.src].filter(Boolean).join(' · '))}</small></span>
    <label class="ad-pr"><input type="number" inputmode="numeric" min="1" step="1" data-ad="price" value="${pr==null?'':pr}" placeholder="по запросу" aria-label="Цена"><span>${adUnit(p)}</span></label>
    <button type="button" class="ad-st ${st==='out'?'off':'on'}" data-ad="stock">${st==='out'?'Нет в наличии':'В наличии'}</button>
@@ -1787,6 +1795,20 @@ function adRow(p){
    ${bd==='sale'?`<label class="ad-pr ad-old"><input type="number" inputmode="numeric" min="1" step="1" data-ad="old" value="${old||''}" placeholder="была" aria-label="Старая цена"><span>было</span></label>`:'<span class="ad-old"></span>'}
    <button type="button" class="ad-eye" data-ad="hidden" title="${hd?'Показать на сайте':'Скрыть с сайта'}" aria-pressed="${hd}">${hd?'Скрыт':'На сайте'}</button>
   </div>`;
+}
+// Фото с телефона (камера/галерея) или с компьютера: ужимаем в браузере до 1200 px JPEG и отправляем.
+function adShrink(file){return new Promise((ok,no)=>{
+  if(!/^image\//.test(file.type||'image/'))return no(new Error('Это не картинка'));
+  const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{URL.revokeObjectURL(u);const k=Math.min(1,1200/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');
+    c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
+    let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>1.3e6&&q>.4){q-=.15;d=c.toDataURL('image/jpeg',q)}ok(d)};
+  im.onerror=()=>{URL.revokeObjectURL(u);no(new Error('Не получилось открыть фото. Попробуйте JPG или PNG.'))};im.src=u})}
+async function adPhoto(id,file,row){
+  row.classList.add('up');
+  try{const d=await adShrink(file);const j=await adApi('/api/admin/photo',{id,data:d});applyOv(j.ov);renderTiles();
+    const p=FULL.find(x=>x.id===id);row.outerHTML=adRow(p);adFlash('Фото обновлено. Покупатели уже видят новое.')}
+  catch(x){row.classList.remove('up');AD.err=x.message;renderAdmin()}
 }
 function adList(){
   const L=adFiltered(),box=$('#adList');if(!box)return;
@@ -1817,6 +1839,7 @@ function renderAdmin(){
       <input type="search" id="adQ" placeholder="Поиск по названию" value="${escA(AD.q)}" aria-label="Поиск">
       <select id="adCat" aria-label="Раздел"><option value="all">Все разделы</option>${ORDER.map(c=>`<option value="${c}"${AD.cat===c?' selected':''}>${CATS[c].name}</option>`).join('')}</select>
     </div>
+    <p class="ad-hint">📷 Чтобы заменить фото, нажмите на картинку товара: с телефона можно сразу сфотографировать.</p>
     <div class="chips ad-fs">${F.map(([k,n])=>`<button type="button" class="chip ad-f" data-f="${k}" aria-pressed="${AD.f===k}">${n}<sup class="num">0</sup></button>`).join('')}</div>
     <div class="ad-bulk" id="adBulk" hidden><b>Выбрано: <span id="adSelN">0</span></b>
       <button type="button" data-bulk="in">В наличии</button><button type="button" data-bulk="out">Нет в наличии</button>
@@ -1879,6 +1902,7 @@ document.addEventListener('change',e=>{
   if(t.id==='adAll'){adFiltered().forEach(p=>t.checked?AD.sel.add(p.id):AD.sel.delete(p.id));adList();return}
   const row=t.closest('.ad-row');if(!row)return;const id=row.dataset.id;
   if(t.dataset.ad==='sel'){t.checked?AD.sel.add(id):AD.sel.delete(id);adBars();return}
+  if(t.dataset.ad==='photo'&&t.files&&t.files[0]){adPhoto(id,t.files[0],row);return}
   if(t.dataset.ad==='badge'){adSet(id,'badge',t.value);row.outerHTML=adRow(FULL.find(p=>p.id===id));adBars()}
 });
 document.addEventListener('click',async e=>{
@@ -1889,6 +1913,8 @@ document.addEventListener('click',async e=>{
   if(row&&t.dataset.ad){const id=row.dataset.id,p=FULL.find(x=>x.id===id);
     if(t.dataset.ad==='stock')adSet(id,'stock',adVal(p,'stock')==='out'?'in':'out');
     if(t.dataset.ad==='hidden')adSet(id,'hidden',!adVal(p,'hidden'));
+    if(t.dataset.ad==='photoReset'){e.preventDefault();if(!confirm('Вернуть исходное фото товара «'+p.name+'»?'))return;row.classList.add('up');
+      try{const j=await adApi('/api/admin/photo',{id,reset:true});applyOv(j.ov);renderTiles();adFlash('Вернули исходное фото')}catch(x){AD.err=x.message;renderAdmin();return}}
     row.outerHTML=adRow(p);adBars();return}
   if(t.dataset.bulk){
     const ids=[...AD.sel];

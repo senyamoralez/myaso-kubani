@@ -48,15 +48,20 @@ function save() {
 let catalog = [];
 try { catalog = JSON.parse(fs.readFileSync(catalogFile, 'utf8')); } catch (e) { console.error('Не удалось прочитать каталог', catalogFile, e.message); }
 const groupPhoto = path.join(__dirname, 'assets', 'group.png');
+const imgDir = path.join(dataDir, 'img');
 const shop = createShop({ C, db, save, catalog, crypto, Buffer,
   assets: { groupPhoto: fs.existsSync(groupPhoto) ? fs.readFileSync(groupPhoto) : null },
+  // фото товаров из панели — файлами в DATA_DIR/img
+  imgPut: (id, bytes, type) => { fs.mkdirSync(imgDir, { recursive: true }); fs.writeFileSync(path.join(imgDir, id), bytes); fs.writeFileSync(path.join(imgDir, id + '.type'), type); },
+  imgGet: id => { const f = path.join(imgDir, id); return fs.existsSync(f) ? { bytes: fs.readFileSync(f), type: fs.readFileSync(f + '.type', 'utf8') } : null; },
+  imgDel: id => { for (const f of [id, id + '.type']) fs.rmSync(path.join(imgDir, f), { force: true }); },
   readQrFile: () => fs.existsSync(qrFile) ? { bytes: fs.readFileSync(qrFile), type: qrFile.endsWith('.svg') ? 'image/svg+xml' : qrFile.endsWith('.jpg') ? 'image/jpeg' : 'image/png' } : null });
 console.log('Каталог:', (catalog.items || catalog).length, 'позиций');
 if (!shop.staff()) console.warn('Рабочий чат не задан: добавьте бота в группу сотрудников и отправьте там /staff');
 
-function readBody(req) {
+function readBody(req, max = 60e3) {
   return new Promise(ok => {
-    let s = ''; req.on('data', c => { s += c; if (s.length > 60e3) req.destroy(); });
+    let s = ''; req.on('data', c => { s += c; if (s.length > max) req.destroy(); });
     req.on('end', () => ok(s)); req.on('error', () => ok(s));
   });
 }
@@ -65,7 +70,7 @@ const server = http.createServer(async (req, res) => {
   const r = await shop.handle({
     method: req.method, path: u.pathname, query: u.searchParams, headers: req.headers,
     ip: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress,
-    bodyText: req.method === 'POST' ? await readBody(req) : '',
+    bodyText: req.method === 'POST' ? await readBody(req, u.pathname === '/api/admin/photo' ? 1.5e6 : 60e3) : '',
   });
   res.writeHead(r.status, r.headers);
   res.end(r.body);

@@ -89,6 +89,13 @@ const order = items => api('/api/orders', { consent: true, name: 'Анна', tel
     r = await api('/api/admin/login', { login: '+7 (901) 102-07-37', password: 'phone-pass-1' }); assert.ok(r.j.token); ok('вход по телефону в любом виде');
     r = await api('/api/admin/users', { action: 'del', login: '89011020737' }, tok); assert.equal(r.code, 200);
 
+    { const big = 'data:image/png;base64,' + Buffer.alloc(600, 7).toString('base64');
+      r = await api('/api/admin/photo', { id: kgItem.id, data: big }, tok); assert.equal(r.code, 200, JSON.stringify(r.j));
+      const url = r.j.ov[kgItem.id].img; assert.match(url, /^\/img\//); assert.equal(r.j.ov[kgItem.id].fit, 'cover');
+      const g = await fetch('http://127.0.0.1:9302' + url); assert.equal(g.status, 200); assert.equal(g.headers.get('content-type'), 'image/png'); assert.equal((await g.arrayBuffer()).byteLength, 600);
+      r = await api('/api/admin/photo', { id: kgItem.id, data: 'data:text/html;base64,AAAA' }, tok); assert.equal(r.code, 400);
+      r = await api('/api/admin/photo', { id: kgItem.id, reset: true }, tok); assert.equal(r.code, 200); assert.ok(!(r.j.ov[kgItem.id] || {}).img);
+      ok('фото товара меняется из панели и отдаётся сервером'); }
     r = await api('/api/admin/password', { old: 'bad', password: 'new-owner-pass' }, tok); assert.equal(r.code, 400);
     r = await api('/api/admin/password', { old: PW, password: 'new-owner-pass' }, tok); assert.equal(r.code, 200);
     r = await api('/api/admin/login', { login: 'admin', password: PW }); assert.equal(r.code, 401);

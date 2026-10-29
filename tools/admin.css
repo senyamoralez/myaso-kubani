@@ -78,3 +78,11 @@
   .ad-save>span{font-size:13px}
   .ad-top-r .btn{height:40px;padding:0 14px}
 }
+/* смена фото товара (29.10) */
+.ad-ph{position:relative;display:block;cursor:pointer}
+.ad-ph input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.ad-ph i{position:absolute;right:2px;bottom:2px;width:20px;height:20px;border-radius:50%;background:rgba(20,16,16,.72);font-style:normal;font-size:11px;line-height:20px;text-align:center;pointer-events:none}
+.ad-ph-x{position:absolute;left:2px;top:2px;z-index:2;width:20px;height:20px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.92);color:#333;font-size:12px;line-height:20px;cursor:pointer}
+.ad-row.up .ad-ph{opacity:.4;pointer-events:none}
+.ad-row.up .ad-ph::after{content:"";position:absolute;inset:16px;border-radius:50%;border:2px solid var(--brass);border-top-color:transparent;animation:spin 1s linear infinite}
+.ad-hint{margin:8px 0 0;font-size:12.5px;opacity:.7}
