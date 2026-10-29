@@ -11,6 +11,7 @@ function configFromEnv(E) {
     api: (E.TG_API || 'https://api.telegram.org').replace(/\/$/, ''),
     shop: E.SHOP_NAME || 'Мясо Кубани и стейки',
     phone: E.SHOP_PHONE || '+7 926 244-37-37',
+    shops: JSON.parse(E.SHOPS || 'null') || DEFAULT_SHOPS,
     pickupAddr: E.PICKUP_ADDRESS || 'Таллинская, 7, ТЦ «Московская ярмарка», 1 этаж',
     deliveryFee: +(E.DELIVERY_FEE || 500),
     freeFrom: +(E.FREE_DELIVERY_FROM || 5000),
@@ -36,6 +37,12 @@ function configFromEnv(E) {
     welcomePhoto: E.WELCOME_PHOTO != null ? E.WELCOME_PHOTO : (E.SITE_URL || 'http://lidmasterapp.ru/myaso-kubani/') + 'img/hero-ribeye.jpg',
   };
 }
+// Магазины лавки. Те же id и координаты — в tools/tail.js (SHOPS), держать одинаковыми.
+const DEFAULT_SHOPS = [
+  { id: 'patriot', name: 'ТЦ «Патриот»', addr: 'ул. Саляма Адиля, 4, ТЦ «Патриот», −1 этаж', lat: 55.7747, lon: 37.4676 },
+  { id: 'green', name: 'ЖК «Грин Парк»', addr: 'Сельскохозяйственная ул., 39, ЖК «Грин Парк», между 2 и 3 подъездом', lat: 55.8555, lon: 37.6235 },
+  { id: 'slavich', name: 'ТЦ «Славич»', addr: 'бульвар Маршала Рокоссовского, 31, ТЦ «Славич»', lat: 55.8157, lon: 37.7156 },
+];
 const emptyDb = () => ({ seq: 1000, orders: {}, pending: {}, offset: 0, lastSummary: '', users: {}, sessions: {}, logins: {}, lastBirthday: '',
   secret: '', staffChat: '', qr: null, webhookUrl: '', custWait: {},
   ov: {}, admins: {}, asess: {}, alog: [] });
@@ -103,10 +110,15 @@ function createShop(opts) {
   }
 
   /* ---------- Telegram ---------- */
+  // Тема форума, из которой пришло текущее сообщение/кнопка: ответы бота идут туда же.
+  let curThread = null;
   async function tg(method, body = {}) {
     if (!C.token) throw new Error('нет BOT_TOKEN');
+    if (curThread && !body._nt && body.message_thread_id === undefined && /^send/.test(method) && body.chat_id != null && String(body.chat_id) === staff())
+      body = { ...body, message_thread_id: curThread };
+    const payload = { ...body }; delete payload._nt;
     const r = await fetch(`${C.api}/bot${C.token}/${method}`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload),
     });
     const j = await r.json().catch(() => ({ ok: false, description: 'bad json' }));
     // группа стала супергруппой — у неё новый ID: запоминаем и повторяем
@@ -116,6 +128,9 @@ function createShop(opts) {
       const nb = { ...body, chat_id: db.staffChat };
       if (nb.reply_to_message_id) { delete nb.reply_to_message_id; }
       return tg(method, nb);
+    }
+    if (!j.ok && body.message_thread_id && /thread|topic/i.test(j.description || '')) {
+      const nb = { ...body, _nt: true }; delete nb.message_thread_id; return tg(method, nb);
     }
     if (!j.ok && /message to be replied not found/i.test(j.description || '') && body.reply_to_message_id) {
       const nb = { ...body }; delete nb.reply_to_message_id; return tg(method, nb);
@@ -205,7 +220,8 @@ function createShop(opts) {
     L.push(`${s.e} <b>Заказ № ${o.no}</b> · ${esc(s.t)}`);
     L.push('');
     L.push(`👤 ${esc(o.customer.name)} · <code>${esc(o.customer.tel)}</code>${o.user ? ' · кабинет' : ''}`);
-    L.push(o.pickup ? `🏪 Самовывоз: ${esc(C.pickupAddr)}` : `🚚 ${esc(o.addr)}`);
+    if (shopOf(o)) L.push(`🏬 Магазин: <b>${esc(shopOf(o).name)}</b>`);
+    L.push(o.pickup ? `🏪 Самовывоз: ${esc(pickupOf(o))}` : `🚚 ${esc(o.addr)}`);
     L.push(`🕑 ${esc(o.date)}, ${esc(o.time)}`);
     L.push('');
     for (const i of o.items) L.push(`• ${esc(i.name)} × ${esc(i.qty)} — ${rub(i.sum)}`);
@@ -241,6 +257,9 @@ function createShop(opts) {
     if (o.refund && o.refund.status !== 'done') rows.push([b(`↩️ Возврат ${rub(o.refund.amount)} сделан`, 'refunded')]);
     return rows;
   }
+  const shopOf = o => C.shops.find(s => s.id === o.shop) || null;
+  const topicOf = o => (o.shop && db.topics && db.topics[o.shop]) || null;
+  const pickupOf = o => shopOf(o)?.addr || C.pickupAddr;
   async function renderStaff(o) {
     if (!staff()) return;
     const body = { chat_id: staff(), text: orderText(o), parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard(o) } };
@@ -249,7 +268,8 @@ function createShop(opts) {
         try { await tg('editMessageText', { ...body, message_id: o.staffMsgId }); return; }
         catch (e) { if (/not modified/.test(e.message)) return; log.error('staff edit', e.message); }
       }
-      const m = await tg('sendMessage', { ...body, chat_id: staff() }); o.staffMsgId = m.message_id; o.staffChat = staff(); save();
+      const th = topicOf(o);
+      const m = await tg('sendMessage', { ...body, chat_id: staff(), ...(th ? { message_thread_id: th } : {}) }); o.staffMsgId = m.message_id; o.staffChat = staff(); save();
     } catch (e) { if (!/not modified/.test(e.message)) log.error('staff', e.message); }
   }
   function customerChat(o) {
@@ -368,14 +388,14 @@ function createShop(opts) {
     if (action === 'paid') return setStatus(o, 'paid', by, `оплата ${rub(o.total)} подтверждена`);
     if (action === 'cancel') return setStatus(o, 'cancel', by, 'заказ отменён');
     if (action === 'work') return setStatus(o, 'work', by, 'взял в работу');
-    if (action === 'packed') return setStatus(o, 'packed', by, 'собран, вес как в заказе', o.pickup ? `Ждём вас: ${C.pickupAddr}.` : 'Скоро передадим курьеру.');
+    if (action === 'packed') return setStatus(o, 'packed', by, 'собран, вес как в заказе', o.pickup ? `Ждём вас: ${pickupOf(o)}.` : 'Скоро передадим курьеру.');
     if (action === 'road') return setStatus(o, 'road', by, 'передан курьеру');
     if (action === 'done') return setStatus(o, 'done', by, o.pickup ? 'выдан покупателю' : 'доставлен');
     if (action === 'weigh' || action === 'fix') {
       const text = action === 'weigh'
         ? `⚖️ Заказ № ${o.no}: ответьте на это сообщение фактической суммой товаров в рублях (без доставки). Сейчас в заказе ${rub(o.goods)}.`
         : `✏️ Заказ № ${o.no}: ответьте на это сообщение новой суммой к оплате (вместе с доставкой). Можно добавить причину через пробел.\nСейчас: ${rub(o.final != null ? o.final : o.total)}.\n\nНапример: 4800 ошиблись в цене рибая`;
-      const m = await tg('sendMessage', { chat_id: staff(), text,
+      const m = await tg('sendMessage', { chat_id: staff(), ...(topicOf(o) ? { message_thread_id: topicOf(o) } : {}), text,
         reply_markup: { force_reply: true, selective: true, input_field_placeholder: action === 'weigh' ? 'Например, 5240' : 'Например, 4800 ошиблись в цене' }, reply_to_message_id: o.staffMsgId });
       db.pending[m.message_id] = { no: o.no, by, kind: action };
       save();
@@ -388,7 +408,7 @@ function createShop(opts) {
     delete db.custWait[chat];
     save();
     await renderStaff(o);
-    if (staff()) await tg('sendMessage', { chat_id: staff(), text: `↩️ Заказ № ${o.no}: реквизиты для возврата ${rub(o.refund.amount)} получены.`, reply_to_message_id: o.staffMsgId }).catch(() => {});
+    if (staff()) await tg('sendMessage', { chat_id: staff(), ...(topicOf(o) ? { message_thread_id: topicOf(o) } : {}), text: `↩️ Заказ № ${o.no}: реквизиты для возврата ${rub(o.refund.amount)} получены.`, reply_to_message_id: o.staffMsgId }).catch(() => {});
     return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', reply_markup: mainKb(chat),
       text: how.method === 'card' ? `Спасибо! Вернём ${rub(o.refund.amount)} на карту •••• ${how.card.slice(-4)}. Сообщим, когда деньги уйдут.` : `Спасибо! Вернём ${rub(o.refund.amount)} по СБП на номер ${esc(o.customer.tel)} в ${esc(how.bank)}. Сообщим, когда деньги уйдут.` });
   }
@@ -439,6 +459,7 @@ function createShop(opts) {
 /today — итоги дня (сами приходят в ${C.summaryAt})
 /client +79001234567 — карточка покупателя
 /card — карта для оплаты переводом
+/topics — создать темы «Заказы · магазин»
 /qr — с картинкой: новый QR для оплаты
 /setup — обновить оформление группы`;
   async function setupGroup(chat) {
@@ -449,7 +470,7 @@ function createShop(opts) {
     if (opts.assets?.groupPhoto) await step('Аватар', () => tgUpload('setChatPhoto', { chat_id: chat }, 'photo', opts.assets.groupPhoto, 'group.png', 'image/png'));
     await step('Команды', () => tg('setMyCommands', { scope: { type: 'chat', chat_id: chat }, commands: [
       { command: 'orders', description: 'Открытые заказы' }, { command: 'today', description: 'Итоги дня' }, { command: 'client', description: 'Карточка покупателя: /client +7…' },
-      { command: 'card', description: 'Карта для оплаты переводом' }, { command: 'qr', description: 'С картинкой — новый QR для оплаты' }, { command: 'setup', description: 'Обновить оформление группы' }] }));
+      { command: 'card', description: 'Карта для оплаты переводом' }, { command: 'topics', description: 'Темы для магазинов' }, { command: 'qr', description: 'С картинкой — новый QR для оплаты' }, { command: 'setup', description: 'Обновить оформление группы' }] }));
     await step('Шпаргалка в закрепе', async () => {
       const m = await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: STAFF_GUIDE() });
       if (db.guideMsg && db.guideMsg !== m.message_id) await tg('unpinChatMessage', { chat_id: chat, message_id: db.guideMsg }).catch(() => {});
@@ -507,7 +528,7 @@ function createShop(opts) {
       return send(`🎁 <b>На счёте ${u.bonus} бонусов</b>\n\nУровень <b>${esc(L.name)}</b> — кешбэк ${Math.round(L.rate * 100)}%.${L.next ? `\nДо уровня ${esc(L.next.name)} (${Math.round(L.next.rate * 100)}%): покупки ещё на ${rub(L.next.need)}.` : ''}\n\n1 бонус = 1 ₽. Можно оплатить до ${Math.round(C.maxBonusShare * 100)}% заказа.${u.birthday ? '' : '\nУкажите день рождения в кабинете — подарим 1 000 бонусов.'}`,
         inline([[urlBtn('👤 Личный кабинет', site('#account'))]]));
     }
-    if (text === BTN.where || /^\/contacts/.test(text)) return send(`📍 <b>${esc(C.shop)}</b>\nМосква, ${esc(C.pickupAddr)}\n🕑 ${esc(C.hours)}\n\n📞 ${esc(C.phone)}`,
+    if (text === BTN.where || /^\/contacts/.test(text)) return send(`📍 <b>${esc(C.shop)}</b> — ${C.shops.length} магазина в Москве:\n\n${C.shops.map(s => `• <b>${esc(s.name)}</b>\n   ${esc(s.addr)}`).join('\n')}\n\n🕑 ${esc(C.hours)}\n📞 ${esc(C.phone)}`,
       inline([[urlBtn('🗺 Маршрут в Яндекс Картах', C.mapUrl)], [urlBtn('💬 WhatsApp', C.whatsapp), urlBtn('ВКонтакте', C.vk)]]));
     if (text === BTN.contact) return send(`💬 <b>Связаться с лавкой</b>\n\n📞 ${esc(C.phone)} — позвоните, подскажем с выбором и толщиной стейка.\nИли напишите в WhatsApp — ответим в рабочее время (${esc(C.hours)}).`,
       inline([[urlBtn('💬 Написать в WhatsApp', C.whatsapp)], [urlBtn('ВКонтакте', C.vk)]]));
@@ -565,6 +586,7 @@ function createShop(opts) {
     if (staff() && chat === staff()) {
       if (/^\/qr(@\w+)?\b/.test(text)) return saveQr(m);
       if (/^\/card(@\w+)?\b/.test(text)) return setCard(text);
+      if (/^\/topics(@\w+)?\b/.test(text)) return makeTopics(chat);
       if (/^\/setup/.test(text)) return setupGroup(chat);
       if (/^\/today/.test(text)) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: summary(day(now())) });
       if (/^\/orders/.test(text)) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', disable_web_page_preview: true, text: openOrders() });
@@ -674,9 +696,12 @@ function createShop(opts) {
       db.offset = u.update_id + 1; save();
     }
     try {
+      const msg = u.callback_query ? u.callback_query.message : u.message;
+      curThread = msg && msg.is_topic_message && staff() && String(msg.chat?.id) === staff() ? msg.message_thread_id : null;
       if (u.callback_query) await onCallback(u.callback_query);
       else if (u.message) await onMessage(u.message);
     } catch (e) { log.error('update', e.message); }
+    finally { curThread = null; }
   }
 
   /** Раз в минуту: итоги дня, бонусы на день рождения, уборка. */
@@ -849,7 +874,7 @@ function createShop(opts) {
     if (db.seq < 2000) db.seq = 2000; // номера заказов: 2001, 2002, …
     const no = String(++db.seq);
     const o = { no, token: crypto.randomBytes(6).toString('hex'), createdAt: iso(), consentAt: iso(), status: 'new',
-      customer: { name, tel }, user: u?.phone || null, pickup, addr: pickup ? '' : str(b.addr, 200), date: str(b.date, 40), time: str(b.time, 40), note: str(b.note, 400),
+      customer: { name, tel }, user: u?.phone || null, pickup, shop: C.shops.some(s => s.id === b.shop) ? b.shop : (C.shops.length === 1 ? C.shops[0].id : null), addr: pickup ? '' : str(b.addr, 200), date: str(b.date, 40), time: str(b.time, 40), note: str(b.note, 400),
       items, goods, delivery, bonusUsed, total: goods + delivery - bonusUsed, fact: null, staffMsgId: null, customerChat: null, cashback: 0,
       history: [{ at: iso(), text: 'заказ с сайта' + (u ? ' (личный кабинет)' : '') }] };
     if (bonusUsed) bonus(u, -bonusUsed, 'Оплата бонусами', no);
@@ -872,6 +897,23 @@ function createShop(opts) {
     }
     db.payCard = { num, name: str(m[2].replace(/^[\s,—-]+/, ''), 80), at: iso() }; save();
     return tg('sendMessage', { chat_id: staff(), parse_mode: 'HTML', text: `✅ Карта для оплаты: <code>${fmtCard(num)}</code>${db.payCard.name ? ', ' + esc(db.payCard.name) : ''}\nПокупатели увидят её при оформлении и номер заказа для комментария к переводу.` });
+  }
+  // Темы в рабочей группе: «Заказы · <магазин>». Группе нужно включить «Темы», боту — право управлять темами.
+  async function makeTopics(chat) {
+    const info = await tg('getChat', { chat_id: chat }).catch(() => null);
+    if (!info || !info.is_forum) return tg('sendMessage', { chat_id: chat, _nt: true, parse_mode: 'HTML', text: '⚠️ В группе не включены темы.\n\nОткройте группу → ✏️ Изменить → включите <b>Темы</b>. Боту дайте права администратора с пунктом «Управление темами». Потом снова отправьте /topics.\n\n(Если ID группы после этого поменяется, бот сам его подхватит.)' });
+    db.topics = db.topics || {};
+    const res = [];
+    for (const s of C.shops) {
+      if (db.topics[s.id]) { res.push(`• ${esc(s.name)} — уже есть`); continue; }
+      try {
+        const t = await tg('createForumTopic', { chat_id: chat, name: `Заказы · ${s.name}`.slice(0, 128) });
+        db.topics[s.id] = t.message_thread_id; save();
+        await tg('sendMessage', { chat_id: chat, message_thread_id: t.message_thread_id, parse_mode: 'HTML', text: `🏬 <b>${esc(s.name)}</b>\n${esc(s.addr)}\n\nСюда приходят заказы этого магазина.` }).catch(() => {});
+        res.push(`• ${esc(s.name)} — создана`);
+      } catch (e) { res.push(`• ${esc(s.name)} — ⚠️ ${esc(e.message)}`); }
+    }
+    return tg('sendMessage', { chat_id: chat, _nt: true, parse_mode: 'HTML', text: `<b>Темы для магазинов</b>\n${res.join('\n')}\n\nЗаказы без выбранного магазина и итоги дня приходят в общую тему.` });
   }
   function qr() {
     if (db.qr) return { bytes: Buffer.from(db.qr.b64, 'base64'), type: db.qr.type };

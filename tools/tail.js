@@ -67,6 +67,43 @@ function route(){
 }
 addEventListener('hashchange',route);
 
+/* ---------- магазины: ближайший по адресу доставки ---------- */
+// Те же id и координаты — в bot/core.js (DEFAULT_SHOPS).
+const SHOPS=[
+ {id:'patriot',name:'ТЦ «Патриот»',addr:'ул. Саляма Адиля, 4, −1 этаж',area:'Хорошёво-Мнёвники',lat:55.7747,lon:37.4676},
+ {id:'green',name:'ЖК «Грин Парк»',addr:'Сельскохозяйственная ул., 39, между 2 и 3 подъездом',area:'Останкинский',lat:55.8555,lon:37.6235},
+ {id:'slavich',name:'ТЦ «Славич»',addr:'бул. Маршала Рокоссовского, 31',area:'Богородское',lat:55.8157,lon:37.7156}];
+let shopSel=null,shopManual=false,shopKm=null,shopMsg='';
+try{shopSel=localStorage.getItem('mk-shop');if(!SHOPS.some(x=>x.id===shopSel))shopSel=null}catch(e){}
+const km=(a,b,c,d)=>{const R=6371,r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
+const geoCache={};
+async function geocode(a){
+  // без квартиры/подъезда/этажа — геокодер их не знает
+  let q=a.replace(/,?\s*(кв\.?|квартира|под[ъь]?езд|подъезд|п\.|эт\.?|этаж|домофон|офис|оф\.)\s*[\w-]*/gi,'').trim();
+  if(!/москв/i.test(q))q='Москва, '+q;
+  if(q in geoCache)return geoCache[q];
+  const tryQ=async t=>{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ru&accept-language=ru&viewbox=36.8,56.1,38.3,55.1&bounded=1&q='+encodeURIComponent(t));const j=await r.json();return j&&j[0]?{lat:+j[0].lat,lon:+j[0].lon}:null};
+  let p=null;try{p=await tryQ(q);if(!p&&q.includes(','))p=await tryQ(q.split(',').slice(0,-1).join(','))}catch(e){p=null}
+  return geoCache[q]=p;
+}
+let geoT=0,geoSeq=0;
+function shopsHtml(){
+  const best=shopKm?Object.entries(shopKm).sort((a,b)=>a[1]-b[1])[0][0]:null;
+  return SHOPS.map(x=>`<label class="shop-opt"><input type="radio" name="shop" value="${x.id}" ${x.id===shopSel?'checked':''}><span><b>${esc(x.name)}${x.id===best?' <i>ближе всех</i>':''}</b><small>${esc(x.addr)}</small></span>${shopKm?`<em class="num">≈ ${shopKm[x.id]<1?'<1':Math.round(shopKm[x.id])} км</em>`:''}</label>`).join('');
+}
+function paintShops(){const el=$('#shopList');if(!el)return;el.innerHTML=shopsHtml();const h=$('#shopHint');if(h)h.textContent=shopMsg||($('#how-p')&&$('#how-p').checked?'Выберите, где удобнее забрать заказ.':'Укажите адрес — подберём ближайший магазин. Можно выбрать и вручную.')}
+function findShop(){
+  clearTimeout(geoT);const inp=$('#f-addr');if(!inp)return;const a=inp.value.trim();
+  if(a.length<6){shopKm=null;shopMsg='';paintShops();return}
+  geoT=setTimeout(async()=>{const n=++geoSeq;shopMsg='Ищем ближайший магазин…';paintShops();
+    const p=await geocode(a);if(n!==geoSeq)return;
+    if(!p){shopKm=null;shopMsg='Не нашли адрес на карте — выберите магазин вручную.';paintShops();return}
+    shopKm={};SHOPS.forEach(x=>shopKm[x.id]=km(p.lat,p.lon,x.lat,x.lon));
+    const best=Object.entries(shopKm).sort((x,y)=>x[1]-y[1])[0][0];
+    if(!shopManual||!shopSel)shopSel=best;
+    shopMsg=shopSel===best?'Заказ соберёт ближайший к вам магазин.':'Ближе к вам другой магазин — можно переключиться.';paintShops()},900);
+}
+
 /* ---------- cart drawer & payment ---------- */
 const drawer=$('#drawer'),scrim=$('#scrim');let lastF=null,stage='cart',order=null,useBonus=false;
 const total=()=>Object.entries(cart).reduce((s,[id,q])=>ALL[id]?s+lineSum(ALL[id],q):s,0);
@@ -124,12 +161,14 @@ function renderDrawer(){
    <div class="seg" role="radiogroup" aria-label="Способ получения"><input type="radio" name="how" id="how-d" value="d" checked><label for="how-d">Доставка</label><input type="radio" name="how" id="how-p" value="p"><label for="how-p">Самовывоз</label></div>
    <div class="row2"><div class="fld"><label for="f-name">Имя</label><input id="f-name" autocomplete="given-name" placeholder="Анна" value="${ME?escA(ME.name):''}"></div><div class="fld"><label for="f-tel">Телефон</label><input id="f-tel" type="tel" autocomplete="tel" placeholder="+7 900 000-00-00" value="${ME?escA(ME.phone):''}"></div></div>
    <div class="fld" id="addrFld"><label for="f-addr">Адрес</label><input id="f-addr" autocomplete="street-address" placeholder="Улица, дом, квартира" list="addrList" value="${ME&&ME.addresses[0]?escA(ME.addresses[0]):''}">${ME?`<datalist id="addrList">${ME.addresses.map(a=>`<option value="${escA(a)}">`).join('')}</datalist>`:''}</div>
+   <div class="fld shop-fld"><span class="lbl">Магазин</span><div class="shops" id="shopList" role="radiogroup" aria-label="Магазин">${shopsHtml()}</div><p class="shop-hint" id="shopHint"></p></div>
    <div class="row2"><div class="fld"><label for="f-date">День</label><select id="f-date">${dates().map(d=>`<option>${d}</option>`).join('')}</select></div><div class="fld"><label for="f-time">Время</label><select id="f-time"><option>10:00–12:00</option><option>12:00–14:00</option><option>14:00–16:00</option><option>16:00–18:00</option><option>18:00–20:00</option></select></div></div>
    <div class="fld"><label for="f-note">Пожелания мяснику</label><textarea id="f-note" placeholder="Например: рибай толщиной 3 см, кости распилить">${ME?escA(ME.note):''}</textarea></div>
    ${AGREE('f-agree')}
    <p class="err" id="formErr" hidden></p>
    <button class="btn btn-fill" type="submit" style="justify-content:center">Перейти к оплате · ${rub(sum)} <span class="ar">→</span></button>
   </form>`;
+  paintShops();if(!shopKm&&$('#f-addr').value.trim())findShop();
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function drawQR(){const el=$('#qr');if(!el)return;if(order.qr){el.innerHTML=`<img src="${order.qr}" alt="QR-код для оплаты заказа № ${order.no}">`;return}
@@ -153,21 +192,23 @@ drawer.addEventListener('click',e=>{
   const q=Math.round((cart[id]+(t.dataset.cinc?stepQ(p):-stepQ(p)))*100)/100;
   if(q<minQ(p))delete cart[id];else cart[id]=q;save();renderCount();renderDrawer();
 });
-drawer.addEventListener('change',e=>{if(e.target.name==='how')$('#addrFld').hidden=e.target.value==='p';
+drawer.addEventListener('change',e=>{if(e.target.name==='how'){$('#addrFld').hidden=e.target.value==='p';paintShops()}
+  if(e.target.name==='shop'){shopSel=e.target.value;shopManual=true;try{localStorage.setItem('mk-shop',shopSel)}catch(x){};shopMsg='';paintShops()}
   if(e.target.id==='useB'){const keep={n:$('#f-name').value,t:$('#f-tel').value,a:$('#f-addr').value,no:$('#f-note').value,p:$('#how-p').checked,g:$('#f-agree').checked};useBonus=e.target.checked;renderDrawer();$('#f-name').value=keep.n;$('#f-tel').value=keep.t;$('#f-addr').value=keep.a;$('#f-note').value=keep.no;$('#f-agree').checked=keep.g;if(keep.p){$('#how-p').checked=true;$('#addrFld').hidden=true}}});
+drawer.addEventListener('input',e=>{if(e.target.id==='f-addr')findShop()});
 drawer.addEventListener('submit',async e=>{e.preventDefault();
   const name=$('#f-name').value.trim(),tel=$('#f-tel').value.trim(),pickup=$('#how-p').checked,addr=$('#f-addr').value.trim();
-  const err=[];if(!name)err.push('имя');if(tel.replace(/\D/g,'').length<10)err.push('телефон из 10–11 цифр');if(!pickup&&!addr)err.push('адрес доставки');
+  const err=[];if(!name)err.push('имя');if(tel.replace(/\D/g,'').length<10)err.push('телефон из 10–11 цифр');if(!pickup&&!addr)err.push('адрес доставки');if(!shopSel)err.push('магазин');
   const box=$('#formErr');if(err.length){box.textContent='Заполните: '+err.join(', ')+'.';box.hidden=false;return}
   if(!$('#f-agree').checked){box.textContent='Отметьте согласие на обработку персональных данных.';box.hidden=false;return}
   const t=total(),free=t>=5000;
-  order={no:1100+Math.floor(Math.random()*800),name,tel,pickup,addr:pickup?'Самовывоз · Таллинская, 7':addr,date:$('#f-date').value,time:$('#f-time').value,note:$('#f-note').value.trim(),
+  order={no:1100+Math.floor(Math.random()*800),name,tel,pickup,addr:pickup?'Самовывоз · '+(SHOPS.find(x=>x.id===shopSel)||{name:''}).name:addr,date:$('#f-date').value,time:$('#f-time').value,note:$('#f-note').value.trim(),
     items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>{const p=ALL[id];return {name:p.name,qty:qLabel(p,q),sum:lineSum(p,q)}}),delivery:free||pickup?0:500};
   order.total=order.items.reduce((s,i)=>s+i.sum,0)+order.delivery;
   const btn=e.target.querySelector('[type=submit]');btn.disabled=true;
   try{
     const maxB=ME?Math.min(ME.bonus,Math.floor(total()*ME.maxBonusShare)):0;
-    const j=await api('/api/orders',{consent:true,name,tel,pickup,addr,date:order.date,time:order.time,note:order.note,useBonus:useBonus?maxB:0,items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>({id,q}))});
+    const j=await api('/api/orders',{consent:true,name,tel,pickup,addr,shop:shopSel,date:order.date,time:order.time,note:order.note,useBonus:useBonus?maxB:0,items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>({id,q}))});
     Object.assign(order,{no:j.no,token:j.token,total:j.total,delivery:j.delivery,bonusUsed:j.bonusUsed,qr:j.payQr?API+j.payQr:null,botLink:j.botLink,payNote:j.payNote,payCard:j.payCard||null,telegramLinked:j.telegramLinked});
     useBonus=false;if(ME)loadMe();
   }catch(err){box.textContent='Не удалось отправить заказ: '+err.message+'. Позвоните нам: +7 926 244-37-37.';box.hidden=false;btn.disabled=false;return}

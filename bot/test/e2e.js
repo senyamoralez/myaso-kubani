@@ -18,6 +18,8 @@ const mock = http.createServer((req, res) => {
     const ok = r => { if (done) return; done = true; res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ok: true, result: r })); };
     if (method === 'getMe') return ok({ id: 1, is_bot: true, username: 'lavka_test_bot' });
     if (method === 'deleteWebhook') return ok(true);
+    if (method === 'getChat') return ok({ id: body.chat_id, type: 'supergroup', is_forum: true });
+    if (method === 'createForumTopic') return ok({ message_thread_id: 700 + (++msgId), name: body.name });
     if (method === 'sendMessage') { const m = { message_id: ++msgId, ...body }; sent.push(m); return ok({ message_id: m.message_id, chat: { id: body.chat_id } }); }
     if (method === 'editMessageText') { edits.push(body); return ok(true); }
     if (method === 'answerCallbackQuery') { answers.push(body); return ok(true); }
@@ -130,7 +132,7 @@ let staffMsg;
     push({ message: { message_id: 30, chat: { id: CUSTOMER, type: 'private' }, from: { id: CUSTOMER, first_name: 'Анна' }, text: '📦 Мои заказы' } }); await wait(300);
     assert.match(sent.at(-1).text, new RegExp('№ ' + o.no));
     push({ message: { message_id: 31, chat: { id: CUSTOMER, type: 'private' }, from: { id: CUSTOMER, first_name: 'Анна' }, text: '📍 Адрес и часы' } }); await wait(300);
-    assert.match(sent.at(-1).text, /Таллинская/); assert.ok(sent.at(-1).reply_markup.inline_keyboard[0][0].url.includes('yandex'));
+    assert.match(sent.at(-1).text, /Саляма Адиля[\s\S]*Грин Парк[\s\S]*Славич/); assert.ok(sent.at(-1).reply_markup.inline_keyboard[0][0].url.includes('yandex'));
 
     // 7. reports
     push({ message: { message_id: 3, chat: { id: STAFF, type: 'supergroup' }, from: { id: 7 }, text: '/today' } }); await wait(300);
@@ -144,6 +146,17 @@ let staffMsg;
     assert.equal(r.j.payCard.num, '2202 2000 1234 5678'); assert.equal(r.j.payCard.name, 'Сергей М., Сбербанк'); await wait(200);
     assert.ok(sent.some(m => m.chat_id == STAFF && (m.text || '').includes(`комментарием <b>${r.j.no}</b>`)), 'в карточке номер для поиска перевода');
     console.log('✓ оплата на карту: номер заказа и карта на сайте и в группе');
+    // магазины и темы группы
+    push({ message: { message_id: 902, chat: { id: STAFF, type: 'supergroup' }, from: { id: 7, first_name: 'Сергей' }, text: '/topics' } }); await wait(400);
+    const topicHello = sent.filter(m => m.chat_id == STAFF && /Сюда приходят заказы этого магазина/.test(m.text || ''));
+    assert.equal(topicHello.length, 3, 'три темы магазинов');
+    const greenTh = topicHello.find(m => /Грин Парк/.test(m.text)).message_thread_id;
+    r = await api('/api/orders', { consent: true, name: 'Ольга', tel: '+79165551242', pickup: true, shop: 'green', items: [{ id: 'ribeye-steaks', q: 2 }] });
+    assert.equal(r.code, 201); await wait(300);
+    const card = sent.find(m => m.chat_id == STAFF && (m.text || '').includes(`Заказ № ${r.j.no}`));
+    assert.equal(card.message_thread_id, greenTh, 'заказ в теме своего магазина');
+    assert.match(card.text, /Магазин: <b>ЖК «Грин Парк»<\/b>/); assert.match(card.text, /Самовывоз: Сельскохозяйственная/);
+    console.log('✓ заказ уходит в тему выбранного магазина');
     console.log('\nВСЕ ПРОВЕРКИ ПРОЙДЕНЫ');
   } catch (e) { console.error('ТЕСТ УПАЛ:', e.message, '\n', log); process.exitCode = 1; }
   srv.kill(); mock.close(); fs.rmSync(dataDir, { recursive: true, force: true });
