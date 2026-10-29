@@ -81,7 +81,7 @@ async function api(p, body, auth) {
 
     r = await api('/api/orders', { consent: true, name: 'Анна', tel: '+79165551240', pickup: true, items: [{ id: 'chuck', q: 1 }] }, T);
     assert.equal(r.code, 201); assert.match(r.j.payQr, /^\/pay-qr\?v=\d+$/); assert.equal(r.j.telegramLinked, true);
-    assert.equal(sent.filter(m => String(m.chat_id) === '-100500' && /Заказ № 1001/.test(m.text)).length, 1);
+    assert.equal(sent.filter(m => String(m.chat_id) === '-100500' && /Заказ № 2001/.test(m.text)).length, 1);
     ok('заказ уходит в рабочий чат, назначенный через /staff');
 
     // перезапуск: база сохраняется
