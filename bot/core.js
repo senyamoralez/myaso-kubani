@@ -14,6 +14,7 @@ function configFromEnv(E) {
     pickupAddr: E.PICKUP_ADDRESS || 'Таллинская, 7, ТЦ «Московская ярмарка», 1 этаж',
     deliveryFee: +(E.DELIVERY_FEE || 500),
     freeFrom: +(E.FREE_DELIVERY_FROM || 5000),
+    payCard: (E.PAY_CARD || '').replace(/\D/g, ''), payCardName: E.PAY_CARD_NAME || '',
     payNote: E.PAY_NOTE || 'Оплата по QR-коду СБП. В назначении платежа укажите номер заказа.',
     summaryAt: E.DAILY_SUMMARY_AT || '21:00',
     tz: E.TZ_NAME || 'Europe/Moscow',
@@ -212,6 +213,7 @@ function createShop(opts) {
     if (o.bonusUsed) L.push(`• Списано бонусов — −${rub(o.bonusUsed)}`);
     const paidNow = o.wasPaid || ['paid', 'work', 'packed', 'road', 'done'].includes(o.status);
     L.push(`<b>${paidNow ? 'Оплачено' : 'К оплате'}: ${rub(o.total)}</b>`);
+    if (!paidNow && payCard()) L.push(`💳 Ищите перевод на карту с комментарием <b>${o.no}</b>`);
     if (o.note) L.push(`💬 ${esc(o.note)}`);
     if (o.fact != null) L.push(`⚖️ После взвешивания: товары на ${rub(o.fact)}`);
     for (const f of o.fixes || []) L.push(`✏️ Сумма изменена: ${rub(f.from)} → <b>${rub(f.to)}</b>${f.reason ? ` (${esc(f.reason)})` : ''} — ${esc(f.by)}`);
@@ -422,7 +424,7 @@ function createShop(opts) {
   const STAFF_GUIDE = () => `📌 <b>Как работать с заказами</b>
 
 1. Заказ с сайта приходит сюда карточкой. 🟡 — ждёт оплаты, 🟠 — покупатель нажал «Я оплатил».
-2. Проверьте поступление в банке → <b>✅ Оплата получена</b>.
+2. Проверьте поступление в банке: в комментарии к переводу покупатель пишет номер заказа. Нашли → <b>✅ Оплата получена</b>.
 3. <b>🔪 Взять в работу</b> → нарежьте, взвесьте.
 4. Вес другой → <b>⚖️ Ввести сумму после взвешивания</b> и ответьте числом. Бот сам посчитает возврат или доплату.
 5. <b>📦 Собран</b> → <b>🚚 Передан курьеру</b> → <b>✅ Доставлен</b> (или <b>🤝 Выдан</b> при самовывозе).
@@ -436,6 +438,7 @@ function createShop(opts) {
 /orders — открытые заказы
 /today — итоги дня (сами приходят в ${C.summaryAt})
 /client +79001234567 — карточка покупателя
+/card — карта для оплаты переводом
 /qr — с картинкой: новый QR для оплаты
 /setup — обновить оформление группы`;
   async function setupGroup(chat) {
@@ -446,7 +449,7 @@ function createShop(opts) {
     if (opts.assets?.groupPhoto) await step('Аватар', () => tgUpload('setChatPhoto', { chat_id: chat }, 'photo', opts.assets.groupPhoto, 'group.png', 'image/png'));
     await step('Команды', () => tg('setMyCommands', { scope: { type: 'chat', chat_id: chat }, commands: [
       { command: 'orders', description: 'Открытые заказы' }, { command: 'today', description: 'Итоги дня' }, { command: 'client', description: 'Карточка покупателя: /client +7…' },
-      { command: 'qr', description: 'С картинкой — новый QR для оплаты' }, { command: 'setup', description: 'Обновить оформление группы' }] }));
+      { command: 'card', description: 'Карта для оплаты переводом' }, { command: 'qr', description: 'С картинкой — новый QR для оплаты' }, { command: 'setup', description: 'Обновить оформление группы' }] }));
     await step('Шпаргалка в закрепе', async () => {
       const m = await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: STAFF_GUIDE() });
       if (db.guideMsg && db.guideMsg !== m.message_id) await tg('unpinChatMessage', { chat_id: chat, message_id: db.guideMsg }).catch(() => {});
@@ -561,6 +564,7 @@ function createShop(opts) {
 
     if (staff() && chat === staff()) {
       if (/^\/qr(@\w+)?\b/.test(text)) return saveQr(m);
+      if (/^\/card(@\w+)?\b/.test(text)) return setCard(text);
       if (/^\/setup/.test(text)) return setupGroup(chat);
       if (/^\/today/.test(text)) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: summary(day(now())) });
       if (/^\/orders/.test(text)) return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', disable_web_page_preview: true, text: openOrders() });
@@ -842,6 +846,7 @@ function createShop(opts) {
     if (u && +b.useBonus > 0) {
       bonusUsed = Math.min(Math.floor(+b.useBonus), u.bonus, Math.floor(goods * C.maxBonusShare));
     }
+    if (db.seq < 2000) db.seq = 2000; // номера заказов: 2001, 2002, …
     const no = String(++db.seq);
     const o = { no, token: crypto.randomBytes(6).toString('hex'), createdAt: iso(), consentAt: iso(), status: 'new',
       customer: { name, tel }, user: u?.phone || null, pickup, addr: pickup ? '' : str(b.addr, 200), date: str(b.date, 40), time: str(b.time, 40), note: str(b.note, 400),
@@ -854,12 +859,27 @@ function createShop(opts) {
     await renderStaff(o);
     return o;
   }
+  // Оплата переводом по номеру карты: /card в рабочей группе или PAY_CARD в настройках.
+  const payCard = () => db.payCard || (C.payCard ? { num: C.payCard, name: C.payCardName } : null);
+  function setCard(text) {
+    const arg = text.replace(/^\/card(@\w+)?/, '').trim();
+    if (/^(off|удалить|нет)$/i.test(arg)) { db.payCard = null; save(); return tg('sendMessage', { chat_id: staff(), text: 'Карта убрана с сайта. Покупатели снова видят QR-код.' }); }
+    const m = arg.match(/^([\d\s-]{16,26})(.*)$/), num = m ? m[1].replace(/\D/g, '') : '';
+    if (!m || num.length < 16 || num.length > 19) {
+      const c = payCard();
+      return tg('sendMessage', { chat_id: staff(), parse_mode: 'HTML', text: (c ? `💳 Сейчас на сайте: <code>${fmtCard(c.num)}</code>${c.name ? ', ' + esc(c.name) : ''}\n\n` : 'Карта для оплаты не задана.\n\n') +
+        'Задать: <code>/card 2202 2000 1234 5678 Сергей М., Сбербанк</code>\nУбрать: <code>/card off</code>' });
+    }
+    db.payCard = { num, name: str(m[2].replace(/^[\s,—-]+/, ''), 80), at: iso() }; save();
+    return tg('sendMessage', { chat_id: staff(), parse_mode: 'HTML', text: `✅ Карта для оплаты: <code>${fmtCard(num)}</code>${db.payCard.name ? ', ' + esc(db.payCard.name) : ''}\nПокупатели увидят её при оформлении и номер заказа для комментария к переводу.` });
+  }
   function qr() {
     if (db.qr) return { bytes: Buffer.from(db.qr.b64, 'base64'), type: db.qr.type };
     return opts.readQrFile ? opts.readQrFile() : null;
   }
   const publicOrder = o => ({ no: o.no, token: o.token, status: o.status, statusText: CUSTOMER_TEXT[o.status], total: o.total, goods: o.goods, delivery: o.delivery, bonusUsed: o.bonusUsed || 0, fact: o.fact,
     items: o.items.map(({ name, qty, sum }) => ({ name, qty, sum })),
+    payCard: payCard() ? { num: fmtCard(payCard().num), name: payCard().name || '' } : null,
     payQr: db.qr || (opts.readQrFile && opts.readQrFile()) ? '/pay-qr' + (db.qr ? '?v=' + Date.parse(db.qr.at) : '') : null, payNote: C.payNote,
     botLink: customerChat(o) ? null : ME ? `https://t.me/${ME.username}?start=o${o.no}_${o.token}` : null,
     telegramLinked: !!customerChat(o) });

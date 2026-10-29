@@ -135,6 +135,15 @@ let staffMsg;
     // 7. reports
     push({ message: { message_id: 3, chat: { id: STAFF, type: 'supergroup' }, from: { id: 7 }, text: '/today' } }); await wait(300);
     console.log('\n' + sent[sent.length - 1].text.replace(/<[^>]+>/g, ''));
+    // оплата переводом на карту, номера заказов с 2001
+    assert.ok(+o.no >= 2001, 'номера заказов с 2001');
+    push({ message: { message_id: 901, chat: { id: STAFF, type: 'supergroup' }, from: { id: 7, first_name: 'Сергей' }, text: '/card 2202 2000 1234 5678, Сергей М., Сбербанк' } }); await wait(300);
+    assert.ok(sent.some(m => m.chat_id == STAFF && /Карта для оплаты/.test(m.text || '')), 'карта сохранена');
+    r = await api('/api/orders', { consent: true, name: 'Пётр', tel: '+79165551241', addr: 'ул. Тест, 2', items: [{ id: 'ribeye-steaks', q: 2 }] });
+    assert.equal(r.code, 201); assert.ok(+r.j.no > +o.no);
+    assert.deepEqual(r.j.payCard, { num: '2202 2000 1234 5678', name: 'Сергей М., Сбербанк' }); await wait(200);
+    assert.ok(sent.some(m => m.chat_id == STAFF && (m.text || '').includes(`комментарием <b>${r.j.no}</b>`)), 'в карточке номер для поиска перевода');
+    console.log('✓ оплата на карту: номер заказа и карта на сайте и в группе');
     console.log('\nВСЕ ПРОВЕРКИ ПРОЙДЕНЫ');
   } catch (e) { console.error('ТЕСТ УПАЛ:', e.message, '\n', log); process.exitCode = 1; }
   srv.kill(); mock.close(); fs.rmSync(dataDir, { recursive: true, force: true });

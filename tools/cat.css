@@ -237,3 +237,13 @@ mark.todo{background:rgba(231,205,159,.16);color:var(--brass-2);box-shadow:inset
 @media (max-width:440px){.hdr .wrap{gap:7px}.logo-txt em{display:none}.srch-btn,.acc-btn,.burger{width:38px;height:38px}.acc-btn{padding:0;justify-content:center}.cart-btn{height:38px}}
 .srch-hero{grid-template-columns:minmax(0,1fr)}
 a.pc-add{text-decoration:none;color:inherit}
+/* оплата переводом на карту (29.10) */
+.pay-memo{display:grid;gap:8px;justify-items:start;padding:16px 18px;border-radius:6px;background:var(--brass);color:var(--ink)}
+.pay-memo span{font-size:14px;font-weight:600;line-height:1.35}
+.pay-memo b{font:500 3rem/1 var(--f-display);letter-spacing:.02em}
+.pay-memo .copy{background:var(--ink);color:var(--tallow);border-radius:999px;padding:7px 14px;font-size:12.5px}
+.pay-card{display:grid;gap:6px;justify-items:start;padding:16px 18px;border-radius:6px;background:var(--bone);color:var(--bone-ink)}
+.pay-card .mono{font-size:11px;color:var(--bone-ink-2)}
+.pay-card b{font:600 1.35rem/1.2 var(--f-mono);letter-spacing:.04em;word-break:break-word}
+.pay-card small{font-size:13px;color:var(--bone-ink-2)}
+.pay-card .copy{margin-top:4px;background:var(--bone-ink);color:var(--bone);border-radius:999px;padding:7px 14px;font-size:12.5px}

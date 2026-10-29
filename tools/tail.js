@@ -76,6 +76,20 @@ function renderDrawer(){
   const b=$('#drBody');
   if(stage==='pay'&&order){
     $('#drTitle').textContent='Оплата';
+    if(order.payCard){const c=order.payCard;
+    b.innerHTML=bar(2)+`<div class="pay">
+      <div class="pay-num"><b class="num">№ ${order.no}</b><span class="num">${rub(order.total)}</span></div>
+      <div class="pay-memo"><span>Перед отправкой денег напишите в сообщении к переводу номер заказа</span><b class="num" id="purp">${order.no}</b><button class="copy" data-copy="${order.no}">Копировать номер</button></div>
+      <div class="pay-card"><span class="mono">Перевод по номеру карты</span><b class="num">${esc(c.num)}</b>${c.name?`<small>Получатель: ${esc(c.name)}</small>`:''}<button class="copy" data-copy="${esc(c.num.replace(/\s/g,''))}">Копировать карту</button></div>
+      <ol class="pay-list">
+        <li>Переведите ${rub(order.total)} на карту в приложении банка.</li>
+        <li>В сообщении к переводу напишите <b>${order.no}</b>. Без номера мы не поймём, чей это перевод.</li>
+        <li>Нажмите «Я оплатил». Проверим поступление, и мясник возьмёт заказ в работу.</li>
+        <li>Если после взвешивания вес меньше, разницу вернём, если больше, согласуем доплату по телефону.</li>
+      </ol>
+      <button class="btn btn-fill" id="paid" style="justify-content:center">Я оплатил <span class="ar">→</span></button>
+      ${order.botLink?`<a class="btn btn-line" href="${order.botLink}" target="_blank" rel="noopener" style="justify-content:center">Получать статус в Telegram</a>`:''}
+    </div>`;return}
     b.innerHTML=bar(2)+`<div class="pay">
       <div class="pay-num"><b class="num">№ ${order.no}</b><span class="num">${rub(order.total)}</span></div>
       <div class="qr-box"><div class="qr" id="qr"></div><div><b>Оплата по QR-коду СБП</b><p>Откройте камеру или приложение банка, отсканируйте код и подтвердите перевод. Номер заказа уже указан в назначении платежа.</p></div></div>
@@ -130,6 +144,7 @@ drawer.addEventListener('click',e=>{
   const t=e.target.closest('button,a');if(!t)return;
   if(t.dataset.close!==undefined){closeCart();return}
   if(t.id==='backCart'){stage='cart';renderDrawer();return}
+  if(t.dataset&&t.dataset.copy!=null&&t.classList.contains('copy')){const v=t.dataset.copy,was=t.textContent;const ok=()=>{t.textContent='Скопировано';setTimeout(()=>{t.textContent=was},1600)};if(navigator.clipboard)navigator.clipboard.writeText(v).then(ok).catch(()=>{});return}
   if(t.id==='copyPurp'){const v=$('#purp').textContent;const ok=()=>{t.textContent='Скопировано'};if(navigator.clipboard)navigator.clipboard.writeText(v).then(ok).catch(()=>{});return}
   if(t.id==='paid'){
     const fin=()=>{order.status='wait';saveOrder();cart={};save();renderCount();stage='sent';renderDrawer()};
@@ -153,7 +168,7 @@ drawer.addEventListener('submit',async e=>{e.preventDefault();
   try{
     const maxB=ME?Math.min(ME.bonus,Math.floor(total()*ME.maxBonusShare)):0;
     const j=await api('/api/orders',{consent:true,name,tel,pickup,addr,date:order.date,time:order.time,note:order.note,useBonus:useBonus?maxB:0,items:Object.entries(cart).filter(([id])=>ALL[id]).map(([id,q])=>({id,q}))});
-    Object.assign(order,{no:j.no,token:j.token,total:j.total,delivery:j.delivery,bonusUsed:j.bonusUsed,qr:j.payQr?API+j.payQr:null,botLink:j.botLink,payNote:j.payNote,telegramLinked:j.telegramLinked});
+    Object.assign(order,{no:j.no,token:j.token,total:j.total,delivery:j.delivery,bonusUsed:j.bonusUsed,qr:j.payQr?API+j.payQr:null,botLink:j.botLink,payNote:j.payNote,payCard:j.payCard||null,telegramLinked:j.telegramLinked});
     useBonus=false;if(ME)loadMe();
   }catch(err){box.textContent='Не удалось отправить заказ: '+err.message+'. Позвоните нам: +7 926 244-37-37.';box.hidden=false;btn.disabled=false;return}
   stage='pay';renderDrawer();
