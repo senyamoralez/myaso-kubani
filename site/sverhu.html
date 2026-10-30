@@ -7,7 +7,7 @@
 <meta property="og:title" content="Мясо Кубани и стейки">
 <meta property="og:description" content="Мраморная говядина, вагю и костромские сыры. Доставка по Москве.">
 <meta property="og:image" content="img/ribeye-steaks.jpg">
-<title>Мясо Кубани и стейки</title>
+<title>Свежее мясо и стейки</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Мясная лавка: мраморная говядина, вагю, стейки и костромские сыры. Режем при вас, доставляем по Москве в холоде.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F0C0B'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23C9A46C' stroke-width='2'/%3E%3Ctext x='32' y='40' font-family='Georgia,serif' font-size='22' fill='%23C9A46C' text-anchor='middle'%3EМК%3C/text%3E%3C/svg%3E">
@@ -1134,7 +1134,7 @@ body::before{background:#0E0B0A}
 
 <header class="hdr" id="hdr">
   <div class="wrap">
-    <a class="logo" href="#top" aria-label="Мясо Кубани и стейки, наверх"><span class="logo-mark">МК</span><span class="logo-txt">Мясо Кубани <em>&amp; стейки</em></span></a>
+    <a class="logo" href="#top" aria-label="Свежее мясо и стейки, наверх"><span class="logo-mark">СМ</span><span class="logo-txt">Свежее мясо <em>&amp; стейки</em></span></a>
     <nav class="nav" aria-label="Каталог">
       <a href="#meat">Мясо</a><a href="#steaks">Стейки</a><a href="#cheese">Сыры</a><a href="#dairy">Молочка</a><a href="#italian">Итальянские сыры</a><a href="#sausage">Колбаса</a><a href="#fish">Рыба и икра</a><a href="#ready">Полуфабрикаты</a>
     </nav>
@@ -1335,7 +1335,7 @@ body::before{background:#0E0B0A}
 
 <footer class="ftr">
   <div class="wrap">
-    <a class="logo" href="#top"><span class="logo-mark">МК</span><span class="logo-txt">Мясо Кубани <em>&amp; стейки</em></span></a>
+    <a class="logo" href="#top"><span class="logo-mark">СМ</span><span class="logo-txt">Свежее мясо <em>&amp; стейки</em></span></a>
     <nav aria-label="Ссылки"><a href="#staff">Бот для сотрудников · демо</a><a href="https://vk.ru/steykribaykupit" target="_blank" rel="noopener">ВКонтакте</a><a href="https://wa.me/79262443737" target="_blank" rel="noopener">WhatsApp</a><a href="https://viber.click/79262443737" target="_blank" rel="noopener">Viber</a></nav>
     <span>© 2026 · Цены на сайте не являются публичной офертой</span>
     <nav class="ftr-legal" aria-label="Документы"><a href="#privacy">Политика конфиденциальности</a><a href="#consent">Согласие на обработку персональных данных</a><a href="#admin">Вход для сотрудников</a></nav>
@@ -1461,7 +1461,7 @@ if($('#menu'))$('#menu').innerHTML=SETS.map(s=>`<article class="set${s.hero?' he
 /* Данные оператора персональных данных. Пустое поле показывается на сайте как жёлтая заглушка.
    Заполните и пересоберите сайт (tools/assemble.py → tools/make_index.py). */
 const OPERATOR={
-  name:'Индивидуальный предприниматель Пилипенко Сергей Васильевич', // Например: «Индивидуальный предприниматель Иванов Иван Иванович» или «ООО „Мясо Кубани“»
+  name:'Индивидуальный предприниматель Пилипенко Сергей Васильевич', // Например: «Индивидуальный предприниматель Иванов Иван Иванович» или «ООО „Свежее мясо“»
   short:'ИП Пилипенко С. В.', // Короткое имя для текста, например: «ИП Иванов И. И.»
   inn:'302102594002', // ИНН
   ogrn:'317502400022050', // ОГРНИП или ОГРН
@@ -1492,7 +1492,7 @@ function legalDocs(){
       <li>реквизиты для возврата денег — банк для перевода по СБП или номер карты, только если возврат нужен и вы сами их указали;</li>
       <li>технические данные: IP-адрес, тип браузера, дата и время входа в личный кабинет.</li></ul>`;
   const privacy={title:'Политика <em>конфиденциальности</em>',crumb:'Политика конфиденциальности',
-    lead:'Как лавка «Мясо Кубани и стейки» обрабатывает и защищает персональные данные покупателей.',
+    lead:'Как лавка «Свежее мясо и стейки» обрабатывает и защищает персональные данные покупателей.',
     sections:[
     ['Общие положения',`<p>Политика составлена по Федеральному закону от 27.07.2006 № 152-ФЗ «О персональных данных» и действует для всех данных, которые оператор получает от посетителей сайта <b>${lgE(OPERATOR.site)}</b>, из личного кабинета, Telegram-бота лавки, а также при заказе по телефону и в мессенджерах.</p>
       <p>Оператор персональных данных — ${op}. Реквизиты указаны в конце документа.</p>
@@ -1983,7 +1983,7 @@ function card(p){return `<article class="pc" data-sub="${p.sub||''}" data-pid="$
 function renderItem(id){
   const p=ALL[id];
   if(!p){location.hash='#'+(curCat||'meat');return}
-  document.title=p.name+' — Мясо Кубани и стейки';
+  document.title=p.name+' — Свежее мясо и стейки';
   const pr=p.price==null
     ?`<div class="item-buy"><span class="item-price">Цена по запросу</span><a class="btn btn-fill" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Подскажите цену: '+p.name)}" target="_blank" rel="noopener">Узнать цену в WhatsApp</a></div>`
     :p.stock==='out'
@@ -2046,14 +2046,14 @@ let lastView='home';
 function route(){
   const h=decodeURIComponent(location.hash.slice(1));
   accView.hidden=h!=='account';adminView.hidden=h!=='admin';
-  if(h==='admin'){home.hidden=true;catView.hidden=true;staffView.hidden=true;legalView.hidden=true;renderAdmin();scrollTo(0,0);lastView='admin';document.title='Управление — Мясо Кубани и стейки';return}legalView.hidden=!(h==='privacy'||h==='consent');
-  if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Мясо Кубани и стейки'}
-  else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
-  else if(h==='search'||h.startsWith('search=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderSearch(h.slice(7));scrollTo(0,0);lastView='cat';document.title='Поиск — Мясо Кубани и стейки'}
+  if(h==='admin'){home.hidden=true;catView.hidden=true;staffView.hidden=true;legalView.hidden=true;renderAdmin();scrollTo(0,0);lastView='admin';document.title='Управление — Свежее мясо и стейки';return}legalView.hidden=!(h==='privacy'||h==='consent');
+  if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Свежее мясо и стейки'}
+  else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Свежее мясо и стейки'}
+  else if(h==='search'||h.startsWith('search=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderSearch(h.slice(7));scrollTo(0,0);lastView='cat';document.title='Поиск — Свежее мясо и стейки'}
   else if(h.startsWith('item=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderItem(h.slice(5));scrollTo(0,0);lastView='cat'}
-  else if(CATS[h]){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderCat(h);scrollTo(0,0);lastView='cat';document.title=CATS[h].name+' — Мясо Кубани и стейки'}
-  else if(h==='staff'){home.hidden=true;catView.hidden=true;staffView.hidden=false;renderStaff();scrollTo(0,0);lastView='staff';document.title='Бот для сотрудников — Мясо Кубани и стейки'}
-  else{const was=lastView;home.hidden=false;catView.hidden=true;staffView.hidden=true;lastView='home';document.title='Мясо Кубани и стейки';
+  else if(CATS[h]){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderCat(h);scrollTo(0,0);lastView='cat';document.title=CATS[h].name+' — Свежее мясо и стейки'}
+  else if(h==='staff'){home.hidden=true;catView.hidden=true;staffView.hidden=false;renderStaff();scrollTo(0,0);lastView='staff';document.title='Бот для сотрудников — Свежее мясо и стейки'}
+  else{const was=lastView;home.hidden=false;catView.hidden=true;staffView.hidden=true;lastView='home';document.title='Свежее мясо и стейки';
     const el=h&&h!=='top'?document.getElementById(h):null;if(el)requestAnimationFrame(()=>el.scrollIntoView());else if(was!=='home'||h==='top')scrollTo(0,0)}
   $$('.nav a').forEach(a=>a.setAttribute('aria-current',a.getAttribute('href')==='#'+h?'page':'false'));
 }
@@ -2170,7 +2170,7 @@ function renderDrawer(){
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function drawQR(){const el=$('#qr');if(!el)return;if(order.qr){el.innerHTML=`<img src="${order.qr}" alt="QR-код для оплаты заказа № ${order.no}">`;return}
-  if(API){el.innerHTML='<span class="mono" style="color:#6C5B51;text-align:center;font-size:11px;line-height:1.4">QR-код<br>уточните<br>по телефону<br>+7 926 244-37-37</span>';return}const txt='ДЕМО · Мясо Кубани и стейки · Заказ № '+order.no+' · '+Math.round(order.total)+' руб.';
+  if(API){el.innerHTML='<span class="mono" style="color:#6C5B51;text-align:center;font-size:11px;line-height:1.4">QR-код<br>уточните<br>по телефону<br>+7 926 244-37-37</span>';return}const txt='ДЕМО · Свежее мясо и стейки · Заказ № '+order.no+' · '+Math.round(order.total)+' руб.';
   if(window.QRCode){try{new QRCode(el,{text:txt,width:132,height:132,colorDark:'#1C1412',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});return}catch(e){}}
   el.innerHTML='<span class="mono" style="color:#6C5B51;text-align:center">QR-код<br>СБП</span>'}
 function openCart(){lastF=document.activeElement;if(stage==='sent')stage='cart';renderDrawer();drawer.hidden=false;scrim.hidden=false;document.documentElement.style.overflow='hidden';$('#cartClose').focus()}
@@ -2248,7 +2248,7 @@ function renderStaff(){
      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-line" id="botReset">Начать сначала</button><a class="btn btn-line" href="#steaks">К каталогу</a></div>
    </div>
    <div class="phone-mock"><div class="tg">
-     <div class="tg-top"><span class="tg-ava">МК</span><span><b>Лавка · Заказы</b><small>бот · 4 сотрудника</small></span></div>
+     <div class="tg-top"><span class="tg-ava">СМ</span><span><b>Лавка · Заказы</b><small>бот · 4 сотрудника</small></span></div>
      <div class="tg-feed" id="tgFeed">
        ${feed.filter(f=>f.sys&&f.before).map(f=>`<span class="tg-sys">${f.sys}</span>`).join('')}
        <div class="tg-msg"><span class="h">Заказ № ${st.no}</span><br><span class="st ${s[1]}">${s[0]}</span><div class="ln">${orderText(st)}</div>${st.fact?`<div class="ln" style="margin-top:6px">После взвешивания: ${rub(st.fact)} · ${st.total-(st.delivery||0)-st.fact>=0?'к возврату '+rub(st.total-(st.delivery||0)-st.fact):'к доплате '+rub(st.fact-(st.total-(st.delivery||0)))}</div>`:''}<time>${feed[0].t||''}</time>${kb(st)}</div>

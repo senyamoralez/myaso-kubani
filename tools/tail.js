@@ -18,7 +18,7 @@ function card(p){return `<article class="pc" data-sub="${p.sub||''}" data-pid="$
 function renderItem(id){
   const p=ALL[id];
   if(!p){location.hash='#'+(curCat||'meat');return}
-  document.title=p.name+' — Мясо Кубани и стейки';
+  document.title=p.name+' — Свежее мясо и стейки';
   const pr=p.price==null
     ?`<div class="item-buy"><span class="item-price">Цена по запросу</span><a class="btn btn-fill" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Подскажите цену: '+p.name)}" target="_blank" rel="noopener">Узнать цену в WhatsApp</a></div>`
     :p.stock==='out'
@@ -81,14 +81,14 @@ let lastView='home';
 function route(){
   const h=decodeURIComponent(location.hash.slice(1));
   accView.hidden=h!=='account';adminView.hidden=h!=='admin';
-  if(h==='admin'){home.hidden=true;catView.hidden=true;staffView.hidden=true;legalView.hidden=true;renderAdmin();scrollTo(0,0);lastView='admin';document.title='Управление — Мясо Кубани и стейки';return}legalView.hidden=!(h==='privacy'||h==='consent');
-  if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Мясо Кубани и стейки'}
-  else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
-  else if(h==='search'||h.startsWith('search=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderSearch(h.slice(7));scrollTo(0,0);lastView='cat';document.title='Поиск — Мясо Кубани и стейки'}
+  if(h==='admin'){home.hidden=true;catView.hidden=true;staffView.hidden=true;legalView.hidden=true;renderAdmin();scrollTo(0,0);lastView='admin';document.title='Управление — Свежее мясо и стейки';return}legalView.hidden=!(h==='privacy'||h==='consent');
+  if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Свежее мясо и стейки'}
+  else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Свежее мясо и стейки'}
+  else if(h==='search'||h.startsWith('search=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderSearch(h.slice(7));scrollTo(0,0);lastView='cat';document.title='Поиск — Свежее мясо и стейки'}
   else if(h.startsWith('item=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderItem(h.slice(5));scrollTo(0,0);lastView='cat'}
-  else if(CATS[h]){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderCat(h);scrollTo(0,0);lastView='cat';document.title=CATS[h].name+' — Мясо Кубани и стейки'}
-  else if(h==='staff'){home.hidden=true;catView.hidden=true;staffView.hidden=false;renderStaff();scrollTo(0,0);lastView='staff';document.title='Бот для сотрудников — Мясо Кубани и стейки'}
-  else{const was=lastView;home.hidden=false;catView.hidden=true;staffView.hidden=true;lastView='home';document.title='Мясо Кубани и стейки';
+  else if(CATS[h]){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderCat(h);scrollTo(0,0);lastView='cat';document.title=CATS[h].name+' — Свежее мясо и стейки'}
+  else if(h==='staff'){home.hidden=true;catView.hidden=true;staffView.hidden=false;renderStaff();scrollTo(0,0);lastView='staff';document.title='Бот для сотрудников — Свежее мясо и стейки'}
+  else{const was=lastView;home.hidden=false;catView.hidden=true;staffView.hidden=true;lastView='home';document.title='Свежее мясо и стейки';
     const el=h&&h!=='top'?document.getElementById(h):null;if(el)requestAnimationFrame(()=>el.scrollIntoView());else if(was!=='home'||h==='top')scrollTo(0,0)}
   $$('.nav a').forEach(a=>a.setAttribute('aria-current',a.getAttribute('href')==='#'+h?'page':'false'));
 }
@@ -205,7 +205,7 @@ function renderDrawer(){
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function drawQR(){const el=$('#qr');if(!el)return;if(order.qr){el.innerHTML=`<img src="${order.qr}" alt="QR-код для оплаты заказа № ${order.no}">`;return}
-  if(API){el.innerHTML='<span class="mono" style="color:#6C5B51;text-align:center;font-size:11px;line-height:1.4">QR-код<br>уточните<br>по телефону<br>+7 926 244-37-37</span>';return}const txt='ДЕМО · Мясо Кубани и стейки · Заказ № '+order.no+' · '+Math.round(order.total)+' руб.';
+  if(API){el.innerHTML='<span class="mono" style="color:#6C5B51;text-align:center;font-size:11px;line-height:1.4">QR-код<br>уточните<br>по телефону<br>+7 926 244-37-37</span>';return}const txt='ДЕМО · Свежее мясо и стейки · Заказ № '+order.no+' · '+Math.round(order.total)+' руб.';
   if(window.QRCode){try{new QRCode(el,{text:txt,width:132,height:132,colorDark:'#1C1412',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});return}catch(e){}}
   el.innerHTML='<span class="mono" style="color:#6C5B51;text-align:center">QR-код<br>СБП</span>'}
 function openCart(){lastF=document.activeElement;if(stage==='sent')stage='cart';renderDrawer();drawer.hidden=false;scrim.hidden=false;document.documentElement.style.overflow='hidden';$('#cartClose').focus()}
@@ -283,7 +283,7 @@ function renderStaff(){
      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-line" id="botReset">Начать сначала</button><a class="btn btn-line" href="#steaks">К каталогу</a></div>
    </div>
    <div class="phone-mock"><div class="tg">
-     <div class="tg-top"><span class="tg-ava">МК</span><span><b>Лавка · Заказы</b><small>бот · 4 сотрудника</small></span></div>
+     <div class="tg-top"><span class="tg-ava">СМ</span><span><b>Лавка · Заказы</b><small>бот · 4 сотрудника</small></span></div>
      <div class="tg-feed" id="tgFeed">
        ${feed.filter(f=>f.sys&&f.before).map(f=>`<span class="tg-sys">${f.sys}</span>`).join('')}
        <div class="tg-msg"><span class="h">Заказ № ${st.no}</span><br><span class="st ${s[1]}">${s[0]}</span><div class="ln">${orderText(st)}</div>${st.fact?`<div class="ln" style="margin-top:6px">После взвешивания: ${rub(st.fact)} · ${st.total-(st.delivery||0)-st.fact>=0?'к возврату '+rub(st.total-(st.delivery||0)-st.fact):'к доплате '+rub(st.fact-(st.total-(st.delivery||0)))}</div>`:''}<time>${feed[0].t||''}</time>${kb(st)}</div>

@@ -1,4 +1,4 @@
-# Cloudflare Worker: сервер заказов, личный кабинет и Telegram-бот «Мясо Кубани и стейки».
+# Cloudflare Worker: сервер заказов, личный кабинет и Telegram-бот «Свежее мясо и стейки».
 # Логика — в ../bot/core.js (та же, что и для обычного сервера).
 # Секрет BOT_TOKEN задаётся в панели Cloudflare (Settings → Variables and Secrets), не здесь.
 name = "myaso-kubani"
@@ -27,7 +27,7 @@ crons = ["*/5 * * * *"]
 
 [vars]
 ALLOWED_ORIGIN = "http://lidmasterapp.ru,https://lidmasterapp.ru,https://senyamoralez.github.io"
-SHOP_NAME = "Мясо Кубани и стейки"
+SHOP_NAME = "Свежее мясо и стейки"
 SHOP_PHONE = "+7 926 244-37-37"
 PICKUP_ADDRESS = "ул. Саляма Адиля, 4, ТЦ «Патриот», −1 этаж"
 DELIVERY_FEE = "500"

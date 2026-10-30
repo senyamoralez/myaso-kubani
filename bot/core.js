@@ -1,4 +1,4 @@
-// Мясо Кубани и стейки — ядро: заказы, личный кабинет, бонусы и Telegram-бот.
+// Свежее мясо и стейки — ядро: заказы, личный кабинет, бонусы и Telegram-бот.
 // Не зависит от среды: одинаково работает в Node.js (server.js) и в Cloudflare Workers (worker/).
 // Хранилище, crypto и Buffer передаются снаружи.
 'use strict';
@@ -9,7 +9,7 @@ function configFromEnv(E) {
     staffChat: E.STAFF_CHAT_ID || '',
     origins: (E.ALLOWED_ORIGIN || '*').split(',').map(s => s.trim()).filter(Boolean),
     api: (E.TG_API || 'https://api.telegram.org').replace(/\/$/, ''),
-    shop: E.SHOP_NAME || 'Мясо Кубани и стейки',
+    shop: E.SHOP_NAME || 'Свежее мясо и стейки',
     phone: E.SHOP_PHONE || '+7 926 244-37-37',
     shops: JSON.parse(E.SHOPS || 'null') || DEFAULT_SHOPS,
     pickupAddr: E.PICKUP_ADDRESS || 'Таллинская, 7, ТЦ «Московская ярмарка», 1 этаж',
