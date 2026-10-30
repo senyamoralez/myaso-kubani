@@ -149,7 +149,7 @@ function renderDrawer(){
     if(order.payCard){const c=order.payCard;
     b.innerHTML=bar(2)+`<div class="pay">
       <div class="pay-num"><b class="num">№ ${order.no}</b><span class="num">${rub(order.total)}</span></div>
-      <div class="pay-memo"><span>Перед отправкой денег напишите в сообщении к переводу номер заказа</span><b class="num" id="purp">${order.no}</b><button class="copy" data-copy="${order.no}">Копировать номер</button></div>
+      <div class="pay-memo"><small class="pay-eyebrow mono">Ваш номер заказа</small><b class="num" id="purp">№ ${order.no}</b><span>Обязательно напишите этот номер в сообщении (комментарии) к переводу — без него мы не поймём, чей платёж.</span><button class="copy" data-copy="${order.no}">Копировать номер</button></div>
       <div class="pay-card"><span class="mono">Перевод по номеру карты</span><b class="num">${esc(c.num)}</b>${c.name?`<small>Получатель: ${esc(c.name)}</small>`:''}<button class="copy" data-copy="${esc(c.num.replace(/\s/g,''))}">Копировать карту</button>${c.phone?`<span class="pay-or">или по СБП на номер телефона</span><b class="num">${esc(c.phone)}</b><button class="copy" data-copy="${esc(c.phone.replace(/[^\d+]/g,''))}">Копировать телефон</button>`:''}<span class="pay-cardno">В комментарии к переводу укажите <b class="num">№ ${order.no}</b></span></div>
       <ol class="pay-list">
         <li>Переведите ${rub(order.total)} на карту${c.phone?' или по номеру телефона':''} в приложении банка.</li>

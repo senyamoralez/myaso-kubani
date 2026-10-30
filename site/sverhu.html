@@ -742,6 +742,9 @@ a.pc-add{text-decoration:none;color:inherit}
 .pay-cardno b{color:var(--bone-ink)}
 @media (max-width:720px){.item-grid{grid-template-columns:1fr;gap:18px}.cv-tabs-top{top:calc(64px + env(safe-area-inset-top,0px))}}
 .pc{cursor:pointer}
+
+.pay-eyebrow{display:block;letter-spacing:.14em;text-transform:uppercase;font-size:11px;opacity:.85;margin-bottom:2px}
+.pay-memo b{line-height:1}
 /* ============ ACCOUNT ============ */
 .acc-btn{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 14px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line-2);font-size:13.5px;font-weight:500;transition:box-shadow .3s;flex-shrink:0}
 .acc-btn:hover{box-shadow:inset 0 0 0 1px var(--brass)}
@@ -2111,7 +2114,7 @@ function renderDrawer(){
     if(order.payCard){const c=order.payCard;
     b.innerHTML=bar(2)+`<div class="pay">
       <div class="pay-num"><b class="num">№ ${order.no}</b><span class="num">${rub(order.total)}</span></div>
-      <div class="pay-memo"><span>Перед отправкой денег напишите в сообщении к переводу номер заказа</span><b class="num" id="purp">${order.no}</b><button class="copy" data-copy="${order.no}">Копировать номер</button></div>
+      <div class="pay-memo"><small class="pay-eyebrow mono">Ваш номер заказа</small><b class="num" id="purp">№ ${order.no}</b><span>Обязательно напишите этот номер в сообщении (комментарии) к переводу — без него мы не поймём, чей платёж.</span><button class="copy" data-copy="${order.no}">Копировать номер</button></div>
       <div class="pay-card"><span class="mono">Перевод по номеру карты</span><b class="num">${esc(c.num)}</b>${c.name?`<small>Получатель: ${esc(c.name)}</small>`:''}<button class="copy" data-copy="${esc(c.num.replace(/\s/g,''))}">Копировать карту</button>${c.phone?`<span class="pay-or">или по СБП на номер телефона</span><b class="num">${esc(c.phone)}</b><button class="copy" data-copy="${esc(c.phone.replace(/[^\d+]/g,''))}">Копировать телефон</button>`:''}<span class="pay-cardno">В комментарии к переводу укажите <b class="num">№ ${order.no}</b></span></div>
       <ol class="pay-list">
         <li>Переведите ${rub(order.total)} на карту${c.phone?' или по номеру телефона':''} в приложении банка.</li>

@@ -291,3 +291,6 @@ a.pc-add{text-decoration:none;color:inherit}
 .pay-cardno b{color:var(--bone-ink)}
 @media (max-width:720px){.item-grid{grid-template-columns:1fr;gap:18px}.cv-tabs-top{top:calc(64px + env(safe-area-inset-top,0px))}}
 .pc{cursor:pointer}
+
+.pay-eyebrow{display:block;letter-spacing:.14em;text-transform:uppercase;font-size:11px;opacity:.85;margin-bottom:2px}
+.pay-memo b{line-height:1}
