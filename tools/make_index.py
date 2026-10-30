@@ -2,7 +2,7 @@ import re, os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 s=open(os.path.join(ROOT, 'tools', 'page.html'),encoding='utf-8').read()
 head,body=s.split('<!--/HEAD-->',1)
-body=re.sub(r'<!--MAP-->.*?<!--/MAP-->','<iframe src="https://yandex.ru/map-widget/v1/org/myaso_kubani_i_steyki/72276710971/?theme=dark&z=16" title="Карта: Мясо Кубани и стейки" loading="lazy" allowfullscreen></iframe>',body,flags=re.S)
+body=re.sub(r'<!--MAP-->.*?<!--/MAP-->','<iframe src="https://yandex.ru/map-widget/v1/org/myaso_kubani_i_steyki/72276710971/?theme=dark&z=16" title="Карта: Свежее мясо и стейки" loading="lazy" allowfullscreen></iframe>',body,flags=re.S)
 doc=f'''<!doctype html>
 <html lang="ru">
 <head>
