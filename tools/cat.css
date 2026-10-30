@@ -270,3 +270,24 @@ a.pc-add{text-decoration:none;color:inherit}
 .fld .shop-opt input:checked{opacity:1;box-shadow:inset 0 0 0 6px var(--brass)}
 .fld .shop-opt input:focus-visible{box-shadow:inset 0 0 0 1.5px currentColor,0 0 0 3px rgba(201,164,108,.35)}
 .fld .shop-opt input:checked:focus-visible{box-shadow:inset 0 0 0 6px var(--brass),0 0 0 3px rgba(201,164,108,.35)}
+/* верхняя липкая навигация разделов (30.10) */
+.cv-tabs-top{position:sticky;top:56px;z-index:30;margin-bottom:0;background:var(--page,#f5efe6);box-shadow:0 1px 0 var(--line),0 10px 20px -18px rgba(28,20,18,.5)}
+/* карточка-страница товара */
+.item-pg{padding-top:clamp(90px,12vw,130px);padding-bottom:clamp(48px,7vw,90px)}
+.item-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,56px);margin-top:18px;align-items:start}
+.item-ph{position:relative;margin:0;border-radius:4px;overflow:hidden;background:var(--bone);aspect-ratio:1/1;box-shadow:0 40px 80px -40px rgba(28,20,18,.5)}
+.item-ph img{width:100%;height:100%;object-fit:contain}
+.item-ph.cover img{object-fit:cover}
+.item-ph .tag{position:absolute;left:12px;top:12px;padding:5px 10px;border-radius:999px;background:rgba(14,11,10,.8);color:var(--tallow);font:500 11px/1 var(--f-mono)}
+.item-info h1{font:300 clamp(2rem,4vw,3.2rem)/1.05 var(--f-display);margin:6px 0 14px;letter-spacing:-.02em}
+.item-desc{font-size:15.5px;line-height:1.6;color:var(--bone-ink-2);max-width:46ch}
+.item-buy{margin-top:26px;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.item-price{font:400 1.7rem/1.1 var(--f-display);color:var(--bone-ink)}
+.item-price s{color:var(--bone-ink-2);font-size:1.1rem}
+.item-price small{display:block;font:500 11px/1.4 var(--f-mono);color:var(--bone-ink-2);margin-top:4px}
+.item-buy .btn svg{margin-left:8px}
+.item-back{display:inline-flex;align-items:center;gap:8px;margin-top:30px;color:var(--brass-2);font-size:14px;text-decoration:none}
+.pay-cardno{display:block;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line-2);font-size:13px;color:var(--bone-ink-2)}
+.pay-cardno b{color:var(--bone-ink)}
+@media (max-width:720px){.item-grid{grid-template-columns:1fr;gap:18px}.cv-tabs-top{top:52px}}
+.pc{cursor:pointer}

@@ -33,7 +33,7 @@ button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;paddin
 ::selection{background:var(--blood-3);color:#fff}
 .wrap{max-width:1440px;margin-inline:auto;padding-left:max(var(--gut),env(safe-area-inset-left,0px));padding-right:max(var(--gut),env(safe-area-inset-right,0px))}
 .mono{font-family:var(--f-mono);font-weight:500;font-size:11px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase}
-.num{font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:lining-nums tabular-nums}
 h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance}
 p{margin:0}
 em{font-style:italic}
@@ -546,11 +546,7 @@ form.order{display:grid;gap:14px;margin-top:6px}
 <!-- 1. HERO -->
 <section class="hero" aria-label="Главный экран">
   <figure class="hero-ph"><img src="img/hero-ribeye-2x.jpg" srcset="img/hero-ribeye.jpg 1050w, img/hero-ribeye-2x.jpg 2100w" sizes="(max-width:900px) 100vw, 60vw" alt="Толстые стейки рибай с плотной мраморностью" fetchpriority="high" decoding="async"></figure>
-  <span class="ph-tag mono"><span>Рибай-стейк</span><b class="num">BMS 5–6</b><span>4 см</span></span>
-  <figure class="specimen" id="specimen">
-    <img src="img/hero-a5.jpg" alt="Срез японского вагю категории A5">
-    <figcaption class="mono">Вагю A5 · BMS 11</figcaption>
-  </figure>
+  <span class="ph-tag mono"><span>Мраморная говядина</span><b class="num">BMS 5–6</b><span>4 см</span></span>
   <div class="wrap hero-in">
     <p class="hero-eyebrow mono">Мясная лавка · стейки и вагю</p>
     <h1 class="hero-h">
@@ -792,7 +788,7 @@ function renderCount(pop){const c=$('#cartCount');c.textContent=Object.keys(cart
 
 /* hero specimen parallax */
 const spec=$('#specimen'),hero=$('.hero');
-if(!RM&&matchMedia('(hover:hover)').matches){hero.addEventListener('pointermove',e=>{const r=hero.getBoundingClientRect();spec.style.setProperty('--mx',((e.clientX-r.left)/r.width-.5)*-26+'px');spec.style.setProperty('--my',((e.clientY-r.top)/r.height-.5)*-26+'px')})}
+if(spec&&!RM&&matchMedia('(hover:hover)').matches){hero.addEventListener('pointermove',e=>{const r=hero.getBoundingClientRect();spec.style.setProperty('--mx',((e.clientX-r.left)/r.width-.5)*-26+'px');spec.style.setProperty('--my',((e.clientY-r.top)/r.height-.5)*-26+'px')})}
 
 /* header */
 const hdr=$('#hdr');const onS=()=>hdr.classList.toggle('solid',scrollY>40);addEventListener('scroll',onS,{passive:true});onS();

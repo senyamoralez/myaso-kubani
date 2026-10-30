@@ -1,11 +1,11 @@
 /* ---------- live catalog: prices, stock and labels from the admin panel ---------- */
 const FULL=DATA.items.slice();
-const BASE={};FULL.forEach(p=>BASE[p.id]={price:p.price,pp:p.pp,stock:p.stock,hidden:p.hidden,badge:p.badge,old:p.old,img:p.img,fit:p.fit});
+const BASE={};FULL.forEach(p=>BASE[p.id]={price:p.price,pp:p.pp,stock:p.stock,hidden:p.hidden,badge:p.badge,old:p.old,img:p.img,fit:p.fit,note:p.note});
 const BADGES={hit:'Хит',new:'Новинка',sale:'Скидка'};
 let OV={};
 function applyOv(ov){
   OV=ov||{};
-  FULL.forEach(p=>{const b=BASE[p.id];['price','pp','stock','hidden','badge','old','img','fit'].forEach(k=>{if(b[k]===undefined)delete p[k];else p[k]=b[k]});if(OV[p.id]){Object.assign(p,OV[p.id]);if(p.img&&p.img[0]==='/')p.img=API+p.img}});
+  FULL.forEach(p=>{const b=BASE[p.id];['price','pp','stock','hidden','badge','old','img','fit','note'].forEach(k=>{if(b[k]===undefined)delete p[k];else p[k]=b[k]});if(OV[p.id]){Object.assign(p,OV[p.id]);if(p.img&&p.img[0]==='/')p.img=API+p.img}});
   DATA.items=FULL.filter(p=>!p.hidden);
 }
 function rerenderView(){
@@ -67,6 +67,7 @@ function adRow(p){
    <select data-ad="badge" aria-label="Метка"><option value="">Без метки</option>${Object.entries(BADGES).map(([k,n])=>`<option value="${k}"${bd===k?' selected':''}>${n}</option>`).join('')}</select>
    ${bd==='sale'?`<label class="ad-pr ad-old"><input type="number" inputmode="numeric" min="1" step="1" data-ad="old" value="${old||''}" placeholder="была" aria-label="Старая цена"><span>было</span></label>`:'<span class="ad-old"></span>'}
    <button type="button" class="ad-eye" data-ad="hidden" title="${hd?'Показать на сайте':'Скрыть с сайта'}" aria-pressed="${hd}">${hd?'Скрыт':'На сайте'}</button>
+   <label class="ad-note"><textarea data-ad="note" rows="2" placeholder="Описание товара — покупатель видит его в карточке" aria-label="Описание">${escA(AD.draft[p.id]&&'note'in AD.draft[p.id]?AD.draft[p.id].note:(p.note||''))}</textarea></label>
   </div>`;
 }
 // Фото с телефона (камера/галерея) или с компьютера: ужимаем в браузере до 1200 px JPEG и отправляем.
@@ -168,6 +169,7 @@ document.addEventListener('input',e=>{
   if(t.id==='adQ'){AD.q=t.value;adList();return}
   const row=t.closest('.ad-row');if(!row)return;
   if(t.dataset.ad==='price'||t.dataset.ad==='old'){const v=t.value.trim()===''?null:Math.round(+t.value);if(v!==null&&!(v>0))return;adSet(row.dataset.id,t.dataset.ad,v);row.classList.toggle('ch',!!AD.draft[row.dataset.id]);adBars()}
+  if(t.dataset.ad==='note'){adSet(row.dataset.id,'note',t.value);row.classList.toggle('ch',!!AD.draft[row.dataset.id]);adBars()}
 });
 document.addEventListener('change',e=>{
   const t=e.target;if(!t.closest||!t.closest('#adminView'))return;

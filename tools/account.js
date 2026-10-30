@@ -170,7 +170,7 @@ function startPoll(){clearInterval(pollT);const t0=Date.now();pollT=setInterval(
 async function afterLogin(){login={step:'phone'};accTab='orders';await loadMe();renderAccount();toast('Вы вошли в личный кабинет')}
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-acctab],[data-repeat],[data-deladdr],[data-logout],#accBtn,#mnAcc');if(!t)return;
-  if(t.id==='accBtn'||t.id==='mnAcc'){if(t.id==='mnAcc')menu(false);location.hash='account';return}
+  if(t.id==='accBtn'||t.id==='mnAcc'){if(typeof menu==='function')menu(false);location.hash='account';return}
   if(t.dataset.acctab){accTab=t.dataset.acctab;renderAccount();return}
   if(t.dataset.repeat){const o=ME.orders.find(x=>x.no===t.dataset.repeat);let n=0;o.items.forEach(i=>{if(ALL[i.id]){cart[i.id]=Math.round(((cart[i.id]||0)+i.q)*100)/100;n++}});save();renderCount(true);toast(n?'Заказ добавлен в корзину':'Этих товаров сейчас нет');if(n)openCart();return}
   if(t.dataset.deladdr){const a=[...ME.addresses];a.splice(+t.dataset.deladdr,1);ME=await api('/api/me',{addresses:a});renderAccount();return}

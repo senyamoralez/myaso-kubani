@@ -86,3 +86,7 @@
 .ad-row.up .ad-ph{opacity:.4;pointer-events:none}
 .ad-row.up .ad-ph::after{content:"";position:absolute;inset:16px;border-radius:50%;border:2px solid var(--brass);border-top-color:transparent;animation:spin 1s linear infinite}
 .ad-hint{margin:8px 0 0;font-size:12.5px;opacity:.7}
+/* описание товара в панели (30.10) */
+.ad-row{align-items:start}
+.ad-note{grid-column:1/-1;display:block;margin-top:4px}
+.ad-note textarea{width:100%;min-height:46px;border-radius:8px;border:1px solid var(--line-2);background:#fff;color:var(--tallow);font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;resize:vertical}

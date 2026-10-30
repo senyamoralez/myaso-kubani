@@ -994,6 +994,11 @@ function createShop(opts) {
         if (v !== priceOf(cur)) what.push(`цена ${money(priceOf(cur))} → ${money(v)}`);
         next[k] = v;
       }
+      if ('note' in c) {
+        const v = str(c.note, 400);
+        if ((cur.note || '') !== v) what.push('описание');
+        next.note = v;
+      }
       if ('stock' in c) {
         if (!['in', 'out'].includes(c.stock)) throw httpErr(400, 'Неверное наличие');
         if ((cur.stock || 'in') !== c.stock) what.push(c.stock === 'out' ? 'нет в наличии' : 'в наличии');
@@ -1016,7 +1021,7 @@ function createShop(opts) {
         next.old = v;
       }
       // в правке храним только то, что отличается от исходного каталога
-      for (const [k, def] of [['price', base.price], ['pp', base.pp], ['stock', base.stock || 'in'], ['hidden', !!base.hidden], ['badge', base.badge || ''], ['old', base.old || null]])
+      for (const [k, def] of [['price', base.price], ['pp', base.pp], ['stock', base.stock || 'in'], ['hidden', !!base.hidden], ['badge', base.badge || ''], ['old', base.old || null], ['note', base.note || '']])
         if (k in next && (next[k] === def || (next[k] == null && def == null))) delete next[k];
       if (Object.keys(next).length) db.ov[id] = next; else delete db.ov[id];
       if (what.length) { db.alog.unshift({ at: iso(), by: who, id, name: base.name, text: what.join(', ') }); lines.push(`• ${base.name}: ${what.join(', ')}`); }

@@ -7,7 +7,7 @@ renderTiles();
 /* ---------- category view ---------- */
 const plus='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v12M0 6h12" stroke="currentColor" stroke-width="1.4"/></svg>';
 let curCat=null,curSub='all';
-function card(p){return `<article class="pc" data-sub="${p.sub||''}">
+function card(p){return `<article class="pc" data-sub="${p.sub||''}" data-pid="${p.id}">
  <div class="pc-ph${p.fit==='cover'?' cover':''}">${p.img?`<img src="${p.img}" alt="${p.name}" loading="lazy">`:''}${p.tag?`<span class="tag">${p.tag}</span>`:''}${p.badge&&BADGES[p.badge]?`<span class="badge b-${p.badge}">${BADGES[p.badge]}</span>`:''}</div>
  <div class="pc-b">
   <span class="pc-k mono">${[p.subName,p.src].filter(Boolean).join(' · ')}</span>
@@ -15,12 +15,37 @@ function card(p){return `<article class="pc" data-sub="${p.sub||''}">
   ${p.note?`<p class="pc-n">${p.note}</p>`:''}
   ${p.price==null?`<div class="pc-f"><span class="pc-p">Цена по запросу<small>уточним наличие и цену</small></span><a class="pc-add" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Подскажите цену: '+p.name)}" target="_blank" rel="noopener"><span class="lbl">Узнать цену</span></a></div>`:p.stock==='out'?`<div class="pc-f pc-out"><span class="pc-p num">${unitPrice(p)}<small>нет в наличии</small></span><a class="pc-add" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Когда будет в наличии: '+p.name+'?')}" target="_blank" rel="noopener"><span class="lbl">Узнать о поступлении</span></a></div>`:`<div class="pc-f"><span class="pc-p num">${p.old?`<s class="pc-old">${rub(p.old)}</s>`:''}${unitPrice(p)}${subPrice(p)?`<small>${subPrice(p)}</small>`:''}</span><button class="pc-add" data-add="${p.id}">${plus}<span class="lbl">В корзину</span></button></div>`}
  </div></article>`}
+function renderItem(id){
+  const p=ALL[id];
+  if(!p){location.hash='#'+(curCat||'meat');return}
+  document.title=p.name+' — Мясо Кубани и стейки';
+  const pr=p.price==null
+    ?`<div class="item-buy"><span class="item-price">Цена по запросу</span><a class="btn btn-fill" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Подскажите цену: '+p.name)}" target="_blank" rel="noopener">Узнать цену в WhatsApp</a></div>`
+    :p.stock==='out'
+    ?`<div class="item-buy"><span class="item-price num">${unitPrice(p)} <small>нет в наличии</small></span><a class="btn btn-line" href="https://wa.me/79262443737?text=${encodeURIComponent('Здравствуйте! Когда будет: '+p.name+'?')}" target="_blank" rel="noopener">Узнать о поступлении</a></div>`
+    :`<div class="item-buy"><span class="item-price num">${p.old?`<s>${rub(p.old)}</s> `:''}${unitPrice(p)}${p.unit==='kg'?`<small>минимальный вес ${qLabel(p,minQ(p))}, шаг ${qLabel(p,stepQ(p))}</small>`:''}</span><button class="btn btn-fill" data-add="${p.id}">В корзину${plus}</button></div>`;
+  $('#catView').innerHTML=`
+  <div class="wrap item-pg">
+    <p class="crumbs mono"><a href="#top">Главная</a><span>/</span><a href="#${p.cat}">${CATS[p.cat].name}</a><span>/</span><span>${p.name}</span></p>
+    <div class="item-grid">
+      <figure class="item-ph${p.fit==='cover'?' cover':''}">${p.img?`<img src="${p.img}" alt="${p.name}">`:''}${p.tag?`<span class="tag">${p.tag}</span>`:''}${p.badge&&BADGES[p.badge]?`<span class="badge b-${p.badge}">${BADGES[p.badge]}</span>`:''}</figure>
+      <div class="item-info">
+        <span class="pc-k mono">${[p.subName,p.src].filter(Boolean).join(' · ')}</span>
+        <h1>${p.name}</h1>
+        <p class="item-desc">${p.note||'Фермерский продукт нашей лавки. Детали и наличие подскажем по телефону.'}</p>
+        ${pr}
+        <a class="item-back" href="#${p.cat}"><span class="ar">←</span> ко всем «${CATS[p.cat].name}»</a>
+      </div>
+    </div>
+  </div>`;
+}
 function renderCat(c){
   const m=CATS[c],items=DATA.items.filter(p=>p.cat===c);curCat=c;curSub='all';
   const subs=[];items.forEach(p=>{if(p.sub&&!subs.find(s=>s[0]===p.sub))subs.push([p.sub,p.subName])});
   const i=ORDER.indexOf(c),nx=ORDER[(i+1)%ORDER.length];
   const cover=DATA.covers[c];
   $('#catView').innerHTML=`
+  <nav class="cv-tabs cv-tabs-top" aria-label="Разделы каталога"><div class="wrap">${ORDER.map(k=>`<a href="#${k}"${k===c?' aria-current="page"':''}>${CATS[k].name}<sup class="num">${count(k)}</sup></a>`).join('')}</div></nav>
   <div class="wrap cv-hero">
     <div class="cv-copy">
       <p class="crumbs mono"><a href="#top">Главная</a><span>/</span><span>Каталог</span><span>/</span><span>${m.name}</span></p>
@@ -30,7 +55,6 @@ function renderCat(c){
     </div>
     ${cover?`<figure class="cv-cover"><img src="${cover}" alt="" fetchpriority="high"><figcaption class="mono">${m.name}</figcaption></figure>`:''}
   </div>
-  <nav class="cv-tabs" aria-label="Разделы каталога"><div class="wrap">${ORDER.map(k=>`<a href="#${k}"${k===c?' aria-current="page"':''}>${CATS[k].name}<sup class="num">${count(k)}</sup></a>`).join('')}</div></nav>
   <div class="wrap cv-body">
     ${subs.length>1?`<div class="chips" role="group" aria-label="Фильтр">${[['all','Все']].concat(subs).map(([k,n])=>`<button class="chip" data-sub="${k}" aria-pressed="${k==='all'}">${n}<sup class="num">${k==='all'?items.length:items.filter(p=>p.sub===k).length}</sup></button>`).join('')}</div>`:''}
     ${items.length?`<div class="pgrid">${items.map(card).join('')}</div>`:`<div class="cv-aside"><div><b>Раздел наполняется</b><p>Фотографии и ассортимент появятся после съёмки в лавке. Наличие на сегодня уточните по телефону.</p></div><a class="btn btn-line" href="tel:+79262443737">+7 926 244-37-37</a></div>`}
@@ -41,6 +65,8 @@ function renderCat(c){
   </div>`;
 }
 document.addEventListener('click',e=>{
+  const pcard=e.target.closest('.pc[data-pid]');
+  if(pcard&&!e.target.closest('[data-add],a,button')){location.hash='#item='+pcard.dataset.pid;return}
   const ch=e.target.closest('.chip[data-sub]');
   if(ch){curSub=ch.dataset.sub;$$('.chip[data-sub]').forEach(b=>b.setAttribute('aria-pressed',b===ch));$$('#catView .pc').forEach(c=>c.hidden=!(curSub==='all'||c.dataset.sub===curSub));return}
   const t=e.target.closest('[data-add],[data-set]');if(!t||t.closest('#drawer'))return;
@@ -59,6 +85,7 @@ function route(){
   if(h==='privacy'||h==='consent'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderLegal(h);scrollTo(0,0);lastView='legal';document.title=(h==='privacy'?'Политика конфиденциальности':'Согласие на обработку персональных данных')+' — Мясо Кубани и стейки'}
   else if(h==='account'){home.hidden=true;catView.hidden=true;staffView.hidden=true;renderAccount();if(meLoaded)loadMe().then(()=>{if(location.hash==='#account')renderAccount()});scrollTo(0,0);lastView='acc';document.title='Личный кабинет — Мясо Кубани и стейки'}
   else if(h==='search'||h.startsWith('search=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderSearch(h.slice(7));scrollTo(0,0);lastView='cat';document.title='Поиск — Мясо Кубани и стейки'}
+  else if(h.startsWith('item=')){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderItem(h.slice(5));scrollTo(0,0);lastView='cat'}
   else if(CATS[h]){home.hidden=true;staffView.hidden=true;catView.hidden=false;renderCat(h);scrollTo(0,0);lastView='cat';document.title=CATS[h].name+' — Мясо Кубани и стейки'}
   else if(h==='staff'){home.hidden=true;catView.hidden=true;staffView.hidden=false;renderStaff();scrollTo(0,0);lastView='staff';document.title='Бот для сотрудников — Мясо Кубани и стейки'}
   else{const was=lastView;home.hidden=false;catView.hidden=true;staffView.hidden=true;lastView='home';document.title='Мясо Кубани и стейки';
@@ -123,7 +150,7 @@ function renderDrawer(){
     b.innerHTML=bar(2)+`<div class="pay">
       <div class="pay-num"><b class="num">№ ${order.no}</b><span class="num">${rub(order.total)}</span></div>
       <div class="pay-memo"><span>Перед отправкой денег напишите в сообщении к переводу номер заказа</span><b class="num" id="purp">${order.no}</b><button class="copy" data-copy="${order.no}">Копировать номер</button></div>
-      <div class="pay-card"><span class="mono">Перевод по номеру карты</span><b class="num">${esc(c.num)}</b>${c.name?`<small>Получатель: ${esc(c.name)}</small>`:''}<button class="copy" data-copy="${esc(c.num.replace(/\s/g,''))}">Копировать карту</button>${c.phone?`<span class="pay-or">или по СБП на номер телефона</span><b class="num">${esc(c.phone)}</b><button class="copy" data-copy="${esc(c.phone.replace(/[^\d+]/g,''))}">Копировать телефон</button>`:''}</div>
+      <div class="pay-card"><span class="mono">Перевод по номеру карты</span><b class="num">${esc(c.num)}</b>${c.name?`<small>Получатель: ${esc(c.name)}</small>`:''}<button class="copy" data-copy="${esc(c.num.replace(/\s/g,''))}">Копировать карту</button>${c.phone?`<span class="pay-or">или по СБП на номер телефона</span><b class="num">${esc(c.phone)}</b><button class="copy" data-copy="${esc(c.phone.replace(/[^\d+]/g,''))}">Копировать телефон</button>`:''}<span class="pay-cardno">В комментарии к переводу укажите <b class="num">№ ${order.no}</b></span></div>
       <ol class="pay-list">
         <li>Переведите ${rub(order.total)} на карту${c.phone?' или по номеру телефона':''} в приложении банка.</li>
         <li><span>В сообщении к переводу напишите <b>${order.no}</b>. Без номера мы не поймём, чей это перевод.</span></li>
