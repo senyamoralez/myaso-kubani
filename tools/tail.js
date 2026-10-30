@@ -230,7 +230,7 @@ drawer.addEventListener('change',e=>{if(e.target.name==='how'){$('#addrFld').hid
   if(e.target.id==='useB'){const keep={n:$('#f-name').value,t:$('#f-tel').value,a:$('#f-addr').value,no:$('#f-note').value,p:$('#how-p').checked,g:$('#f-agree').checked};useBonus=e.target.checked;renderDrawer();$('#f-name').value=keep.n;$('#f-tel').value=keep.t;$('#f-addr').value=keep.a;$('#f-note').value=keep.no;$('#f-agree').checked=keep.g;if(keep.p){$('#how-p').checked=true;$('#addrFld').hidden=true}}});
 drawer.addEventListener('input',e=>{if(e.target.id==='f-addr')findShop()});
 drawer.addEventListener('submit',async e=>{e.preventDefault();
-  const name=$('#f-name').value.trim(),tel=$('#f-tel').value.trim(),pickup=$('#how-p').checked,addr=$('#f-addr').value.trim();
+  const name=$('#f-name').value.trim(),tel=$('#f-tel').value.trim(),pickup=$('#how-p').checked,addr=$('#f-addr').value.trim();try{if(tel)localStorage.setItem('mk-phone',tel)}catch(_){}
   const err=[];if(!name)err.push('имя');if(tel.replace(/\D/g,'').length<10)err.push('телефон из 10–11 цифр');if(!pickup&&!addr)err.push('адрес доставки');if(!shopSel)err.push('магазин');
   const box=$('#formErr');if(err.length){box.textContent='Заполните: '+err.join(', ')+'.';box.hidden=false;return}
   if(!$('#f-agree').checked){box.textContent='Отметьте согласие на обработку персональных данных.';box.hidden=false;return}

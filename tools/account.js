@@ -78,7 +78,7 @@ function renderAccBtn(){const b=$('#accBtn');if(!b)return;b.querySelector('.lbl'
   const bb=b.querySelector('.bb');if(bb){bb.textContent=ME?ME.bonus:'';bb.hidden=!ME}}
 
 /* ---------- account view ---------- */
-let accTab='orders',login={step:'phone'},pollT=null;
+let accTab='orders',login={step:'phone',phone:(()=>{try{return localStorage.getItem('mk-phone')||''}catch(e){return''}})()},pollT=null;
 // статусы заказов обновляются сами, пока открыт кабинет на вкладке «Заказы»
 setInterval(async()=>{if(!API||location.hash!=='#account'||accTab!=='orders'||!ME||document.hidden)return;
   const was=JSON.stringify(ME.orders.map(o=>o.status));await loadMe();if(ME&&location.hash==='#account'&&accTab==='orders'&&JSON.stringify(ME.orders.map(o=>o.status))!==was)renderAccount()},30000);
@@ -158,7 +158,7 @@ function loginView(){
 function bindLogin(){
   const err=m=>{const e=$('#lErr');if(e){e.textContent=m;e.hidden=false}};
   const f1=$('#lPhone');if(f1){$('#l-phone').focus();f1.onsubmit=async e=>{e.preventDefault();if(!$('#l-agree').checked){err('Отметьте согласие на обработку персональных данных.');return}const btn=f1.querySelector('[type=submit]');btn.disabled=true;
-    try{const r=await api('/api/auth/start',{consent:true,phone:$('#l-phone').value});login={step:r.method==='telegram_link'?'link':'code',nonce:r.nonce,hint:r.hint,link:r.link,phone:$('#l-phone').value};renderAccount();if(login.step==='link')startPoll()}
+    try{try{localStorage.setItem('mk-phone',$('#l-phone').value)}catch(_){}const r=await api('/api/auth/start',{consent:true,phone:$('#l-phone').value});login={step:r.method==='telegram_link'?'link':'code',nonce:r.nonce,hint:r.hint,link:r.link,phone:$('#l-phone').value};renderAccount();if(login.step==='link')startPoll()}
     catch(x){err(x.message);btn.disabled=false}}}
   const f2=$('#lCode');if(f2){$('#l-code').focus();f2.onsubmit=async e=>{e.preventDefault();const btn=f2.querySelector('[type=submit]');btn.disabled=true;
     try{await api('/api/auth/verify',{nonce:login.nonce,code:$('#l-code').value});await afterLogin()}catch(x){err(x.message);btn.disabled=false}}}
